@@ -7,40 +7,33 @@
 
 import torch
 
-from lib.utils import BertConfig
+from lib.utils import BertConfig, load_bert
+from lib.config import Config
 
 class ModelBaseLine(torch.nn.Module):
   """
   The model of baseline.
   """
 
-  def __init__(self, bert_path, device, dropout, use_position_embedding=True,
-               max_postion=cf.max_postion, pos_dim=cf.bert_dim,
-               encoder_hidden_layers=cf.encoder_hidden_layers,
-               encoder_intermediate_dim=cf.encoder_intermediate_dim,
-               encoder_dropout_prob=cf.encoder_dropout_prob,
-               attention_head_num=cf.num_heads,
-               attention_probs_dropout_prob=cf.attention_probs_dropout_prob,
-               attention_use_bias=cf.attention_use_bias,
-               training=True,
-               use_pretrained_bert=cf.use_pretrained_bert,
-               use_conv=False,
-               chan_in=cf.chan_in,
-               chan_out=cf.chan_out,
-               kernel=cf.kernel):
-    """"""
+  def __init__(self, config):
+    """
+
+    Args:
+      config(Config):
+    """
     super(ModelBaseLine, self).__init__()
-    self.training = training
+    self.config = config
     # embedding
-    self.dim = pos_dim
-    self.bert = load_bert(bert_path, device, use_pretrained_bert,
-                          cf.bert_config, cf.use_segment_embedding, LocalBert)
-    self.dropout = torch.nn.Dropout(dropout)
-    self.layer_normal = torch.nn.LayerNorm([max_postion, pos_dim])
-    self.use_position_embedding = use_position_embedding
-    self.encoder_hidden_layers = encoder_hidden_layers
-    if self.use_position_embedding:
-      self.init_positon_embedding(max_postion, pos_dim)
+    # self.dim = pos_dim
+    self.bert = load_bert(config.bert_config)
+    self.dropout = torch.nn.Dropout(config.dropout)
+    self.layer_normal = torch.nn.LayerNorm([config.bert_config.max_position_embeddings,
+                                            config.bert_config.hidden_size])
+    # self.use_position_embedding = use_position_embedding
+    # self.encoder_hidden_layers = encoder_hidden_layers
+    if self.config.use_position_embedding:
+      self.init_positon_embedding(config.bert_config.max_position_embeddings,
+                                  config.bert_config.hidden_size)
     # conv
     self.use_conv = use_conv
     self.conv = DepthwiseSeparableConv(chan_in, chan_out, kernel, dim=2)
