@@ -9,6 +9,7 @@ import torch
 
 from lib.utils import BertConfig, load_bert
 from lib.config import Config
+from lib.model_utils import DepthwiseSeparableConv, Attention, Encoder
 
 class ModelBaseLine(torch.nn.Module):
   """
@@ -35,29 +36,17 @@ class ModelBaseLine(torch.nn.Module):
       self.init_positon_embedding(config.bert_config.max_position_embeddings,
                                   config.bert_config.hidden_size)
     # conv
-    self.use_conv = use_conv
-    self.conv = DepthwiseSeparableConv(chan_in, chan_out, kernel, dim=2)
+    self.conv = DepthwiseSeparableConv(config.chan_in, config.chan_out,
+                                       config.kernel, config.dim)
 
     # encoder
-    self.attention_layer = torch.nn.ModuleList([
-      Attention(pos_dim, attention_head_num, attention_probs_dropout_prob,
-                attention_use_bias)
-      for i in range(self.encoder_hidden_layers)
-    ])
-    self.encoder_dropout_prob = encoder_dropout_prob
-    self.encoder_linear_1 = torch.nn.ModuleList(
-      [torch.nn.Linear(self.dim, self.dim)
-       for i in range(self.encoder_hidden_layers)])
-    self.encoder_line_intermidia = torch.nn.ModuleList(
-      [torch.nn.Linear(self.dim, encoder_intermediate_dim)
-       for i in range(self.encoder_hidden_layers)])
-    self.encoder_line_2 = torch.nn.ModuleList(
-      [torch.nn.Linear(encoder_intermediate_dim, self.dim)
-       for i in range(self.encoder_hidden_layers)])
-
-    self.encoder_normal = torch.nn.ModuleList(
-      [torch.nn.LayerNorm([max_postion, pos_dim]) for _ in
-       range(self.encoder_hidden_layers)])
+    self.encoder = Encoder(config.encoder_hidden_layer_number,
+                           config.bert_config.hidden_size,
+                           config.bert_config.max_position_embeddings,
+                           config.encoder_intermediate_dim,
+                           config.attention_head_num,
+                           config.attention_droup_out,
+                           config.attention_use_bias)
 
     # pointer
     self.pointer_linear = torch.nn.Linear(self.dim, 2)
@@ -93,26 +82,6 @@ class ModelBaseLine(torch.nn.Module):
     # embeddings = self.dropout(embeddings)
     return embeddings
 
-  def encoder(self, embeddings, input_mask):
-    prelayer_output = embeddings
-    for index in range(self.encoder_hidden_layers):
-      # batchsize, sequence_length, posi_duim
-      embeddings = self.attention_layer[index](embeddings, embeddings,
-                                               input_mask)
-      embeddings = self.encoder_linear_1[index](embeddings)
-      embeddings = torch.relu(embeddings)
-      embeddings = self.encoder_line_intermidia[index](embeddings)
-      # embeddings = gelu(embeddings)
-      embeddings = torch.relu(embeddings)
-      embeddings = self.encoder_line_2[index](embeddings)
-      embeddings = torch.relu(embeddings)
-      embeddings += prelayer_output
-      # todo: dropout、 normal
-      embeddings = self.encoder_normal[index](embeddings)
-      # embeddings = functional.leaky_relu(embeddings)
-      # embeddings = functional.dropout(embeddings, self.encoder_dropout_prob, self.training)
-      prelayer_output = embeddings
-    return embeddings
 
   def pointer(self, embeddings, input_mask):
     """"""

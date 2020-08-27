@@ -118,3 +118,6 @@ def load_bert(bert_config):
   else:
     return bert_config.bert_class(bert_config).to(bert_config.device)
 
+def reshape_tensor(tensor, shape):
+  return tensor.contiguous().view(*shape)
+

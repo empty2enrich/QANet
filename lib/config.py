@@ -27,6 +27,7 @@ class Config(object):
     self.chan_in = 768
     self.chan_out = 768
     self.kernel = 7
+    self.dim = 2
     # bert config
     self.bert_config = BertConfig()
 
