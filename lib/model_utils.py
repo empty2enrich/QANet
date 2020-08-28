@@ -7,7 +7,7 @@
 
 import math
 import torch
-from lib.utils import reshape_tensor
+from lib.utils import reshape_tensor, load_bert
 
 class DepthwiseSeparableConv(torch.nn.Module):
   def __init__(self, in_ch, out_ch, k, dim=1, bias=True):
@@ -114,7 +114,35 @@ class Attention(torch.nn.Module):
 
 
 class Embedding(torch.nn.Module):
-  pass
+  def __init__(self, config):
+    self.bert = load_bert(config.bert_config)
+    self.use_position_embedding = config.use_position_embedding
+    self.use_conv = config.use_conv
+    if self.use_position_embedding:
+      self.init_positon_embedding(config.bert_config.max_position_embeddings,
+                                  config.bert_config.hidden_size)
+
+    self.conv = DepthwiseSeparableConv(config.chan_in, config.chan_out,
+                                       config.kernel, config.dim)
+
+  def init_positon_embedding(self, max_postion, pos_dim):
+    posi_embedding = torch.Tensor(max_postion, pos_dim)
+    # posi_embedding = torch.nn.init.kaiming_normal(posi_embedding, a=math.sqrt(5), mode='fan_in', nonlinearity='leaky_relu')
+    self.position_embedding = torch.nn.Parameter(posi_embedding)
+    torch.nn.init.kaiming_normal_(self.position_embedding, mode='fan_out')
+
+  def forward(self, input_ids, segment_ids):
+    """"""
+    embeddings = self.bert(input_ids, segment_ids)
+    if self.use_position_embedding:
+      embeddings = embeddings + self.position_embedding
+    if self.use_conv:
+      embeddings = embeddings.unsqueeze(-1)
+      embeddings = embeddings.permute(0, 3, 2, 1)
+      embeddings = self.conv(embeddings)
+      embeddings = embeddings.permute(0, 3, 2, 1)
+      embeddings = embeddings.squeeze(-1)
+    return embeddings
 
 class Encoder(torch.nn.Module):
   """

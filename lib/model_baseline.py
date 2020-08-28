@@ -7,9 +7,9 @@
 
 import torch
 
-from lib.utils import BertConfig, load_bert
+from lib.utils import BertConfig, load_bert, mask
 from lib.config import Config
-from lib.model_utils import DepthwiseSeparableConv, Attention, Encoder
+from lib.model_utils import DepthwiseSeparableConv, Attention, Encoder, Embedding
 
 class ModelBaseLine(torch.nn.Module):
   """
@@ -25,19 +25,7 @@ class ModelBaseLine(torch.nn.Module):
     super(ModelBaseLine, self).__init__()
     self.config = config
     # embedding
-    # self.dim = pos_dim
-    self.bert = load_bert(config.bert_config)
-    self.dropout = torch.nn.Dropout(config.dropout)
-    self.layer_normal = torch.nn.LayerNorm([config.bert_config.max_position_embeddings,
-                                            config.bert_config.hidden_size])
-    # self.use_position_embedding = use_position_embedding
-    # self.encoder_hidden_layers = encoder_hidden_layers
-    if self.config.use_position_embedding:
-      self.init_positon_embedding(config.bert_config.max_position_embeddings,
-                                  config.bert_config.hidden_size)
-    # conv
-    self.conv = DepthwiseSeparableConv(config.chan_in, config.chan_out,
-                                       config.kernel, config.dim)
+    self.embed_word = Embedding(config)
 
     # encoder
     self.encoder = Encoder(config.encoder_hidden_layer_number,
@@ -51,36 +39,6 @@ class ModelBaseLine(torch.nn.Module):
     # pointer
     self.pointer_linear = torch.nn.Linear(self.dim, 2)
     # self.pointer_softmax = torch.nn.Softmax(dim=-2)
-
-  def init_positon_embedding(self, max_postion, pos_dim):
-    posi_embedding = torch.Tensor(max_postion, pos_dim)
-    # posi_embedding = torch.nn.init.kaiming_normal(posi_embedding, a=math.sqrt(5), mode='fan_in', nonlinearity='leaky_relu')
-    self.position_embedding = torch.nn.Parameter(posi_embedding)
-    torch.nn.init.kaiming_normal_(self.position_embedding, mode='fan_out')
-
-  def embedding(self, input_ids, segment_ids):
-    """
-    Embedding for input.
-    Args:
-      input_ids:
-      segment_ids:
-
-    Returns:
-
-    """
-    embeddings, _ = self.bert(input_ids, segment_ids)
-    if self.use_position_embedding:
-      embeddings = embeddings + self.position_embedding
-    # batch_size, length, dim
-    embeddings = self.layer_normal(embeddings)
-    if self.use_conv:
-      embeddings = embeddings.unsqueeze(-1)
-      embeddings = embeddings.permute(0, 3, 2, 1)
-      embeddings = self.conv(embeddings)
-      embeddings = embeddings.permute(0, 3, 2, 1)
-      embeddings = embeddings.squeeze(-1)
-    # embeddings = self.dropout(embeddings)
-    return embeddings
 
 
   def pointer(self, embeddings, input_mask):
@@ -99,7 +57,7 @@ class ModelBaseLine(torch.nn.Module):
     # return start, end, pro
 
   def forward(self, input_ids, input_mask, segment_ids):
-    embedding = self.embedding(input_ids, segment_ids)
+    embedding = self.embed_word(input_ids, segment_ids)
     embedding = self.encoder(embedding, input_mask)
     start, end = self.pointer(embedding, input_mask)
     return start, end
