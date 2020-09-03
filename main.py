@@ -6,6 +6,7 @@
 #
 
 from lib.config import Config
+from lib.data_process import load_data
 from lib.utils import load_model, get_adam_optimizer
 from lib.model.model_baseline import ModelBaseLine
 from tqdm import tqdm

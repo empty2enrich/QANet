@@ -46,6 +46,22 @@ class Config(object):
     self.epochs = 3
     self.log_path = "../log/log.txt"
     self.logger = get_logger(self.log_path)
+    # data preprocess
+    self.data_cfg = {
+      "train": {
+        "feature_path": "dataset/cmrc2018/train_features_roberta512.json",
+        "data_file": "origin_data/cmrc2018/cmrc2018_train.json"
+      },
+      "test": {
+        "feature_path": "dataset/cmrc2018/test_features_roberta512.json",
+        "data_file": "origin_data/cmrc2018/cmrc2018_trial.json"
+      },
+      "dev": {
+        "feature_path": "dataset/cmrc2018/dev_features_roberta512.json",
+        "data_file": "origin_data/cmrc2018/cmrc2018_dev.json"
+      }
+    }
+
 
   def load_from_json(self, json_path):
     """"""
