@@ -23,11 +23,12 @@ def load_data(config, mode="train"):
   cur_cfg = config.data_cfg.get(mode, {})
   feature_path = cur_cfg.get("feature_path")
   data_file = cur_cfg.get("data_file")
+  is_train = cur_cfg.get("is_train")
   if not os.path.exists(config.feature_path):
     json2features(data_file,
                   [feature_path.replace('_features_', '_examples_'),
                    feature_path],
-                  tokenizer, is_training=True,
+                  tokenizer, is_training=is_train,
                   max_seq_length=config.bert_config.max_position_embeddings)
   # if not os.path.exists(config.dev_dir1) or not os.path.exists(config.dev_dir2):
   #   json2features(config.dev_file, [config.dev_dir1, config.dev_dir2],

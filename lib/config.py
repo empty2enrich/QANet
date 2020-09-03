@@ -50,15 +50,18 @@ class Config(object):
     self.data_cfg = {
       "train": {
         "feature_path": "dataset/cmrc2018/train_features_roberta512.json",
-        "data_file": "origin_data/cmrc2018/cmrc2018_train.json"
+        "data_file": "origin_data/cmrc2018/cmrc2018_train.json",
+        "is_train": True
       },
       "test": {
         "feature_path": "dataset/cmrc2018/test_features_roberta512.json",
-        "data_file": "origin_data/cmrc2018/cmrc2018_trial.json"
+        "data_file": "origin_data/cmrc2018/cmrc2018_trial.json",
+        "is_train": False
       },
       "dev": {
         "feature_path": "dataset/cmrc2018/dev_features_roberta512.json",
-        "data_file": "origin_data/cmrc2018/cmrc2018_dev.json"
+        "data_file": "origin_data/cmrc2018/cmrc2018_dev.json",
+        "is_train": False
       }
     }
 
