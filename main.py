@@ -5,30 +5,20 @@
 # cython: language_level=3
 #
 
+import torch
+import torch.nn.functional as F
+import traceback
+
 from lib.config import Config
 from lib.data_process import load_data
-from lib.utils import load_model, get_adam_optimizer
 from lib.model.model_baseline import ModelBaseLine
+from my_py_toolkit.torch.utils import load_model, get_adam_optimizer
 from tqdm import tqdm
-
-def train(model, optimizer, config):
-  """
-  train model
-  Args:
-    model:
-    config(Config):
-
-  Returns:
-
-  """
-  model.train()
-
-
-
 
 def main(config):
   model = load_model(ModelBaseLine, config)
   optimizer = get_adam_optimizer(model, config)
+  _, dev_data = load_data(config, "dev")
   for epoch in tqdm(range(config.start_epoch, config.epochs),
                     total=config.epochs,
                     initial=config.start_epoch,

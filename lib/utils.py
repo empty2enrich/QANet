@@ -141,52 +141,9 @@ def mask(tensor, tensor_mask, mask_dim):
     tensor_mask = tensor_mask.unsqueeze(-1)
   return tensor * tensor_mask
 
-def load_model(model_class, config):
-  """
-  load model
-  Args:
-    model_class:
-    config:
 
-  Returns:
-
-  """
-  model = model_class(config)
-  if config.is_continue_train:
-    model_path = os.path.join(config.model_save_dir,
-                              f"model_{config.continue_checkpoint}.pkl")
-    if config.is_only_save_params:
-      model.load_state_dict(torch.load(model_path))
-    else:
-      model = torch.load(model_path, map_location=config.device)
-  model.to(config.device)
 
 ################################################################################
 ############################# model 优化 ########################################
 ################################################################################
 
-def get_model_trainabel_param(model):
-  params = filter(lambda param: param.requires_grad, model.parameters())
-  return params
-
-def get_adam_optimizer(model, config):
-  """
-  Gets optimizer.
-  Returns:
-
-  """
-  params = get_model_trainabel_param(model)
-  if not config.is_continue:
-    return torch.optim.Adam(lr=config.learning_rate, betas=(config.beta1, config.beta2),
-                         eps=1e-8, weight_decay=3e-7, params=params)
-  else:
-    config.logger.info(f"Continue train, continue_checkpoint: {config.continue_checkpoint}")
-    optimizer_path = os.path.join(config.model_dir,
-                              f"optimizer_{config.continue_checkpoint}.pkl")
-    if not config.is_only_save_params:
-      optimizer = torch.load(optimizer_path, map_location=config.device)
-    else:
-      optimizer = torch.optim.Adam(lr=config.learning_rate, betas=(config.beta1, config.beta2),
-                         eps=1e-8, weight_decay=3e-7, params=params)
-      optimizer.load_state_dict(torch.load(optimizer_path))
-    return optimizer

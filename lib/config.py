@@ -34,6 +34,7 @@ class Config(object):
     self.do_lower_case = True
     # train cfg
     self.learning_rate = 3e-5
+    self.batch_size = 2
     self.beta1 = 0.9
     self.beta2 = 0.999
     self.is_only_save_params = True
@@ -42,10 +43,12 @@ class Config(object):
     self.model_save_dir = "../model"
     self.is_continue_train = False
     self.continue_checkpoint = 600
+    self.continue_epoch = 0
     self.start_epoch = 0
     self.epochs = 3
     self.log_path = "../log/log.txt"
     self.logger = get_logger(self.log_path)
+
     # data preprocess
     self.data_cfg = {
       "train": {
