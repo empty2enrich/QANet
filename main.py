@@ -12,6 +12,7 @@ import traceback
 from lib.config import Config
 from lib.data_process import load_data
 from lib.model.model_baseline import ModelBaseLine
+from lib.train.train_qa import train_qa, eval_qa
 from my_py_toolkit.torch.utils import load_model, get_adam_optimizer
 from tqdm import tqdm
 
@@ -23,7 +24,9 @@ def main(config):
                     total=config.epochs,
                     initial=config.start_epoch,
                     desc="train"):
-    pass
+    train_qa(model, optimizer, config, epoch)
+    eval_qa(model, optimizer, config, epoch, "test")
+    eval_qa(model, optimizer, config, epoch, "dev")
 
 if __name__ == "__main__":
   config = Config()
