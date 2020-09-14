@@ -49,6 +49,19 @@ class Config(object):
     self.log_path = "../log/log.txt"
     self.logger = get_logger(self.log_path)
 
+    # data visualization
+    self.visual_data_dir = "./runs"
+    self.visual_loss = True
+    self.visual_gradient = False
+    self.visual_parameter = False
+    self.visual_optimizer = False
+    self.visual_valid_result = True
+    self.visual_gradient_dir = "../log/gradients"
+    self.visual_parameter_dir = "../log/parameters"
+    self.visual_loss_dir = "../log/losses"
+    self.visual_optimizer_dir = "../log/optimizer"
+    self.visual_valid_result_dir = "../log/valid"
+
     # data preprocess
     self.data_cfg = {
       "train": {

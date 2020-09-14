@@ -194,7 +194,7 @@ def evaluate_valid_result(valid_result, exact_match_total=0, f1_total=0, total=0
 
 
 
-def train_qa(model, optimizer, config, epoch, scheduler=None, mode="train"):
+def train_qa(model, optimizer, config, epoch, scheduler=None):
   """
   train model
   Args:
@@ -208,8 +208,6 @@ def train_qa(model, optimizer, config, epoch, scheduler=None, mode="train"):
   losses = []
   exact_match_total = 0
   f1_total = 0
-  exact_match = 0
-  f1 = 0
   softmax = torch.nn.Softmax(dim=-1)
   log_sofmax = torch.nn.LogSoftmax(dim=-1)
   tokenizer, train_data = load_data(config, "train")
@@ -225,13 +223,14 @@ def train_qa(model, optimizer, config, epoch, scheduler=None, mode="train"):
                             start_embeddings, start_positions)
       config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}")
       losses.append(loss.item())
+
+      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, end_embeddings, end_positions, epoch,
+                                                                      exact_match_total, f1_total, input_ids, loss, model,
+                                                                      optimizer, softmax, start_embeddings, start_positions,
+                                                                      step, tokenizer, mode="train")
+      # 参数更新
       loss.backward()
       optimizer.step()
-      #
-      record_train_info(config, end_embeddings, end_positions, epoch,
-                        exact_match_total, f1_total, input_ids, loss, model,
-                        optimizer, softmax, start_embeddings, start_positions,
-                        step, tokenizer)
       if scheduler:
         scheduler.step()
       if step % config.record_interval_steps == 0:
@@ -243,20 +242,69 @@ def train_qa(model, optimizer, config, epoch, scheduler=None, mode="train"):
   loss_avg = np.mean(losses)
   config.logger.info("Epoch {:8d} loss {:8f}\n".format(epoch, loss_avg))
 
+def eval_qa(model, optimizer, config, epoch, mode="test"):
+  """
+  train model
+  Args:
+    model:
+    config(Config):
 
-def record_train_info(config, end_embeddings, end_positions, epoch,
-                      exact_match_total, f1_total, input_ids, loss, model,
-                      optimizer, softmax, start_embeddings, start_positions,
-                      step, tokenizer):
+  Returns:
+
+  """
+  model.eval()
+  losses = []
+  exact_match_total = 0
+  f1_total = 0
+  softmax = torch.nn.Softmax(dim=-1)
+  log_sofmax = torch.nn.LogSoftmax(dim=-1)
+  tokenizer, train_data = load_data(config, mode)
+  config.logger.info("Start train =============================")
+  for step, batch in enumerate(train_data):
+    try:
+      batch = tuple([v.to(config.device) for v in batch])
+      input_ids, input_mask, segment_ids, start_positions, end_positions = batch
+      input_mask = input_mask.float()
+      start_embeddings, end_embeddings = model(input_ids, input_mask, segment_ids)
+      loss = calculate_loss(end_embeddings, end_positions, log_sofmax,
+                            start_embeddings, start_positions)
+      config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}")
+      losses.append(loss.item())
+      #
+      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, end_embeddings, end_positions, epoch,
+                                                                      exact_match_total, f1_total, input_ids, loss, model,
+                                                                      optimizer, softmax, start_embeddings, start_positions,
+                                                                      step, tokenizer, mode)
+      # record
+    except Exception:
+      config.logger.error(traceback.format_exc())
+
+  loss_avg = np.mean(losses)
+  config.logger.info("Epoch {:8d} loss {:8f}\n".format(epoch, loss_avg))
+
+
+def record_train_info_calculate_f1_em(config, end_embeddings, end_positions, epoch,
+                                      exact_match_total, f1_total, input_ids, loss, model,
+                                      optimizer, softmax, start_embeddings, start_positions,
+                                      step, tokenizer, mode="train"):
   pre_start, pre_end, probabilities = find_max_proper_batch(
     softmax(start_embeddings), softmax(end_embeddings))
   cur_res = convert_pre_res(input_ids, pre_start, pre_end, start_positions,
                             end_positions, probabilities, tokenizer)
   exact_match_total, f1_total, exact_match, f1 = evaluate_valid_result(
     cur_res, exact_match_total, f1_total, (step + 1) * config.batch_size)
-  record_info(valid_result=cur_res, epoch=epoch, is_continue=True)
-  visual_data(model, loss, optimizer, epoch, step,
-              exact_match_total, f1_total, exact_match, f1, label=model)
+  record_info(valid_result=cur_res, epoch=epoch, is_continue=True, r_type=mode)
+  if mode == "train":
+    visual_data(model, loss, optimizer, epoch, step,
+                exact_match_total, f1_total, exact_match, f1, model, config.visual_gradient_dir,
+                  config.visual_parameter, config.visual_parameter_dir,
+                  config.visual_loss, config.visual_loss_dir,
+                  config.visual_optimizer, config.visual_optimizer_dir,
+                  config.visual_valid_result, config.visual_valid_result_dir)
+  else:
+    visual_data(model, loss, optimizer, epoch, step,
+              exact_match_total, f1_total, exact_match, f1, model)
+  return exact_match_total, f1_total
 
 
 def calculate_loss(end_embeddings, end_positions, log_sofmax, start_embeddings,
