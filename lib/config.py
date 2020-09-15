@@ -75,12 +75,12 @@ class Config(object):
       "test": {
         "feature_path": "dataset/cmrc2018/test_features_roberta512.json",
         "data_file": "data/cmrc2018/cmrc2018_trial.json",
-        "is_train": False
+        "is_train": True
       },
       "dev": {
         "feature_path": "dataset/cmrc2018/dev_features_roberta512.json",
         "data_file": "data/cmrc2018/cmrc2018_dev.json",
-        "is_train": False
+        "is_train": True
       }
     }
 

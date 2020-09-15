@@ -232,7 +232,7 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
           actual_text = "".join(
             doc_tokens[start_position_final:(end_position_final + 1)])
           cleaned_answer_text = "".join(
-            FullTokenizer.whitespace_tokenize(ans_text))
+            whitespace_tokenize(ans_text))
 
           if actual_text != cleaned_answer_text:
             print(actual_text, 'V.S', cleaned_answer_text)
