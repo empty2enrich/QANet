@@ -7,6 +7,7 @@
 
 from lib.utils import BertConfig
 from my_py_toolkit.log.logger import get_logger
+from pytorch_transformers.modeling_bert import BertModel
 
 class Config(object):
   def __init__(self):
@@ -30,7 +31,9 @@ class Config(object):
     self.kernel = 7
     self.dim = 2
     # bert config
-    self.bert_config = BertConfig()
+    self.bert_config = BertConfig(bert_path="./resource/bert_model/bert",
+                                  bert_class=BertModel,
+                                  use_pretrained_bert=True)
     self.do_lower_case = True
     # train cfg
     self.learning_rate = 3e-5
@@ -66,17 +69,17 @@ class Config(object):
     self.data_cfg = {
       "train": {
         "feature_path": "dataset/cmrc2018/train_features_roberta512.json",
-        "data_file": "origin_data/cmrc2018/cmrc2018_train.json",
+        "data_file": "data/cmrc2018/cmrc2018_train.json",
         "is_train": True
       },
       "test": {
         "feature_path": "dataset/cmrc2018/test_features_roberta512.json",
-        "data_file": "origin_data/cmrc2018/cmrc2018_trial.json",
+        "data_file": "data/cmrc2018/cmrc2018_trial.json",
         "is_train": False
       },
       "dev": {
         "feature_path": "dataset/cmrc2018/dev_features_roberta512.json",
-        "data_file": "origin_data/cmrc2018/cmrc2018_dev.json",
+        "data_file": "data/cmrc2018/cmrc2018_dev.json",
         "is_train": False
       }
     }

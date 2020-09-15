@@ -37,7 +37,7 @@ class ModelBaseLine(torch.nn.Module):
                            config.attention_use_bias)
 
     # pointer
-    self.pointer_linear = torch.nn.Linear(self.dim, 2)
+    self.pointer_linear = torch.nn.Linear(config.bert_config.hidden_size, 2)
     # self.pointer_softmax = torch.nn.Softmax(dim=-2)
 
 

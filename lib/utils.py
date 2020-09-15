@@ -11,8 +11,7 @@ import os
 import torch
 import six
 
-
-from pytorch_pretrained_bert.modeling import BertModel
+import pytorch_transformers
 from my_py_toolkit.file.file_toolkit import readjson
 
 class BertConfig(object):
@@ -82,6 +81,21 @@ class BertConfig(object):
     self.bert_config_path = bert_config_path
     self.bert_class = bert_class
 
+    # 根据 bert path 初始化 config, vocab 等信息
+    self.init_with_bert_path()
+
+  def init_with_bert_path(self):
+    if not self.bert_path:
+      return
+    if not self.vocab_file:
+      self.vocab_file = os.path.join(self.bert_path, "vocab.txt")
+    if not self.bert_config_path:
+      self.bert_config_path = os.path.join(self.bert_path, "bert_config.json")
+    if not self.vocab_size:
+      with open(self.vocab_file, "r", encoding="utf-8") as f:
+        vocab = f.read()
+        self.vocab_size = len(vocab.split("\n"))
+
   @classmethod
   def from_dict(cls, json_object):
     """Constructs a `BertConfig` from a Python dictionary of parameters."""
@@ -117,7 +131,7 @@ def load_bert(bert_config):
   if bert_config.use_pretrained_bert:
     return bert_config.bert_class.from_pretrained(bert_config.bert_path).to(bert_config.device)
   else:
-    return bert_config.bert_class(bert_config).to(bert_config.device)
+    return bert_config.bert_class(pytorch_transformers.BertConfig.from_dict(bert_config.to_dict())).to(bert_config.device)
 
 def reshape_tensor(tensor, shape):
   return tensor.contiguous().view(*shape)

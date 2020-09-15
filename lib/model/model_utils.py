@@ -115,6 +115,7 @@ class Attention(torch.nn.Module):
 
 class Embedding(torch.nn.Module):
   def __init__(self, config):
+    super(Embedding, self).__init__()
     self.bert = load_bert(config.bert_config)
     self.use_position_embedding = config.use_position_embedding
     self.use_conv = config.use_conv
@@ -151,6 +152,7 @@ class Encoder(torch.nn.Module):
 
   def __init__(self, encoder_layer_num, dim, max_position, intermediate_dim, attention_head_num,
                attention_pro_drop, attention_use_bias=False):
+    super(Encoder, self).__init__()
     self.layer_num = encoder_layer_num
     self.attention_layer = torch.nn.ModuleList([
       Attention(dim, attention_head_num, attention_pro_drop, attention_use_bias)
@@ -166,7 +168,7 @@ class Encoder(torch.nn.Module):
       torch.nn.Linear(intermediate_dim, dim) for i in range(encoder_layer_num)
     ])
     self.normal = torch.nn.ModuleList([
-      torch.nn.LayerNorm([max_position, dim]) for _ in encoder_layer_num
+      torch.nn.LayerNorm([max_position, dim]) for _ in range(encoder_layer_num)
     ])
 
   def forward(self, embeddings, input_mask):

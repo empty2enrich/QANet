@@ -24,7 +24,7 @@ def load_data(config, mode="train"):
   feature_path = cur_cfg.get("feature_path")
   data_file = cur_cfg.get("data_file")
   is_train = cur_cfg.get("is_train")
-  if not os.path.exists(config.feature_path):
+  if not os.path.exists(feature_path):
     json2features(data_file,
                   [feature_path.replace('_features_', '_examples_'),
                    feature_path],
