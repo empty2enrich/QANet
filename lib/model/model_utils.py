@@ -134,7 +134,7 @@ class Embedding(torch.nn.Module):
 
   def forward(self, input_ids, segment_ids):
     """"""
-    embeddings = self.bert(input_ids, segment_ids)
+    embeddings, _ = self.bert(input_ids, segment_ids)
     if self.use_position_embedding:
       embeddings = embeddings + self.position_embedding
     if self.use_conv:

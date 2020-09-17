@@ -51,7 +51,7 @@ def load_data(config, mode="train"):
                                    dtype=torch.long)
   train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
                              all_start_positions, all_end_positions)
-  train_dataloader = DataLoader(train_data, batch_size=config.n_batch,
+  train_dataloader = DataLoader(train_data, batch_size=config.batch_size,
                                 shuffle=True)
   return tokenizer, train_dataloader
 
