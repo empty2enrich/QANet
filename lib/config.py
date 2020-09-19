@@ -11,7 +11,7 @@ from pytorch_transformers.modeling_bert import BertModel
 
 class Config(object):
   def __init__(self):
-    self.device = "cpu"
+    self.device = "cuda"
     self.dropout = 0.1
     # encoder
     self.use_position_embedding = True
@@ -37,7 +37,7 @@ class Config(object):
     self.do_lower_case = True
     # train cfg
     self.learning_rate = 3e-5
-    self.batch_size = 2
+    self.batch_size = 4
     self.beta1 = 0.9
     self.beta2 = 0.999
     self.is_only_save_params = True

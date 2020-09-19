@@ -234,7 +234,7 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
       if scheduler:
         scheduler.step()
       if step % config.record_interval_steps == 0:
-        save_model(model, optimizer, epoch, step)
+        save_model(model, config.model_save_dir, optimizer, epoch=epoch, steps=step)
       # record
     except Exception:
       config.logger.error(traceback.format_exc())
@@ -295,14 +295,15 @@ def record_train_info_calculate_f1_em(config, end_embeddings, end_positions, epo
     cur_res, exact_match_total, f1_total, (step + 1) * config.batch_size)
   record_info(valid_result=cur_res, epoch=epoch, is_continue=True, r_type=mode)
   if mode == "train":
-    visual_data(model, loss, optimizer, epoch, step,
-                exact_match_total, f1_total, exact_match, f1, model, config.visual_gradient_dir,
+    visual_data(model, epoch, step, loss, optimizer,
+                exact_match_total, f1_total, exact_match, f1, model,
+                config.visual_gradient, config.visual_gradient_dir,
                   config.visual_parameter, config.visual_parameter_dir,
                   config.visual_loss, config.visual_loss_dir,
                   config.visual_optimizer, config.visual_optimizer_dir,
                   config.visual_valid_result, config.visual_valid_result_dir)
   else:
-    visual_data(model, loss, optimizer, epoch, step,
+    visual_data(model, epoch, step, loss, optimizer,
               exact_match_total, f1_total, exact_match, f1, model)
   return exact_match_total, f1_total
 

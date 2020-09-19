@@ -19,7 +19,6 @@ from tqdm import tqdm
 def main(config):
   model = load_model(ModelBaseLine, config)
   optimizer = get_adam_optimizer(model, config)
-  _, dev_data = load_data(config, "dev")
   for epoch in tqdm(range(config.start_epoch, config.epochs),
                     total=config.epochs,
                     initial=config.start_epoch,
