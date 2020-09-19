@@ -224,9 +224,10 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
       config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}")
       losses.append(loss.item())
 
-      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, end_embeddings, end_positions, epoch,
+      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
+                                                                      end_embeddings, end_positions, epoch,
                                                                       exact_match_total, f1_total, input_ids, loss, model,
-                                                                      optimizer, softmax, start_embeddings, start_positions,
+                                                                      optimizer, softmax,
                                                                       step, tokenizer, mode="train")
       # 参数更新
       loss.backward()
@@ -271,9 +272,10 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
       config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}")
       losses.append(loss.item())
       #
-      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, end_embeddings, end_positions, epoch,
+      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
+                                                                      end_embeddings, end_positions, epoch,
                                                                       exact_match_total, f1_total, input_ids, loss, model,
-                                                                      optimizer, softmax, start_embeddings, start_positions,
+                                                                      optimizer, softmax,
                                                                       step, tokenizer, mode)
       # record
     except Exception:
@@ -283,9 +285,10 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
   config.logger.info("Epoch {:8d} loss {:8f}\n".format(epoch, loss_avg))
 
 
-def record_train_info_calculate_f1_em(config, end_embeddings, end_positions, epoch,
+def record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
+                                      end_embeddings, end_positions, epoch,
                                       exact_match_total, f1_total, input_ids, loss, model,
-                                      optimizer, softmax, start_embeddings, start_positions,
+                                      optimizer, softmax,
                                       step, tokenizer, mode="train"):
   pre_start, pre_end, probabilities = find_max_proper_batch(
     softmax(start_embeddings), softmax(end_embeddings))
@@ -296,7 +299,7 @@ def record_train_info_calculate_f1_em(config, end_embeddings, end_positions, epo
   record_info(valid_result=cur_res, epoch=epoch, is_continue=True, r_type=mode)
   if mode == "train":
     visual_data(model, epoch, step, loss, optimizer,
-                exact_match_total, f1_total, exact_match, f1, model,
+                exact_match_total, f1_total, exact_match, f1, mode,
                 config.visual_gradient, config.visual_gradient_dir,
                   config.visual_parameter, config.visual_parameter_dir,
                   config.visual_loss, config.visual_loss_dir,
