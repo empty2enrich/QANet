@@ -221,7 +221,6 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
       start_embeddings, end_embeddings = model(input_ids, input_mask, segment_ids)
       loss = calculate_loss(end_embeddings, end_positions, log_sofmax,
                             start_embeddings, start_positions)
-      config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}")
       losses.append(loss.item())
 
       exact_match_total, f1_total = record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
@@ -236,12 +235,21 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
         scheduler.step()
       if step % config.record_interval_steps == 0:
         save_model(model, config.model_save_dir, optimizer, epoch=epoch, steps=step)
+
+      config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}, "
+                         f"extract_match_total: {exact_match_total}, "
+                         f"f1_total: {f1_total}, "
+                         f"extract_match: {exact_match_total/((step + 1)* config.batch_size)},"
+                         f"f1: {f1_total/((step + 1) * config.batch_size)}")
       # record
     except Exception:
       config.logger.error(traceback.format_exc())
 
   loss_avg = np.mean(losses)
-  config.logger.info("Epoch {:8d} loss {:8f}\n".format(epoch, loss_avg))
+  config.logger.info(
+    f"Epoch {epoch} loss {loss_avg} extract_macth_total {exact_match_total} "
+    f"f1_total {f1_total} extract_match {exact_match_total/len(train_data)} "
+    f"f1 {f1_total / len(train_data)}\n")
 
 def eval_qa(model, optimizer, config, epoch, mode="test"):
   """
@@ -269,7 +277,6 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
       start_embeddings, end_embeddings = model(input_ids, input_mask, segment_ids)
       loss = calculate_loss(end_embeddings, end_positions, log_sofmax,
                             start_embeddings, start_positions)
-      config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}")
       losses.append(loss.item())
       #
       exact_match_total, f1_total = record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
@@ -277,13 +284,20 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
                                                                       exact_match_total, f1_total, input_ids, loss, model,
                                                                       optimizer, softmax,
                                                                       step, tokenizer, mode)
+      config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}, "
+                         f"extract_match_total: {exact_match_total}, "
+                         f"f1_total: {f1_total}, "
+                         f"extract_match: {exact_match_total/((step + 1)* config.batch_size)},"
+                         f"f1: {f1_total/((step + 1) * config.batch_size)}")
       # record
     except Exception:
       config.logger.error(traceback.format_exc())
 
   loss_avg = np.mean(losses)
-  config.logger.info("Epoch {:8d} loss {:8f}\n".format(epoch, loss_avg))
-
+  config.logger.info(
+    f"Epoch {epoch} loss {loss_avg} extract_macth_total {exact_match_total} "
+    f"f1_total {f1_total} extract_match {exact_match_total/len(train_data)} "
+    f"f1 {f1_total / len(train_data)}\n")
 
 def record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
                                       end_embeddings, end_positions, epoch,
@@ -307,7 +321,9 @@ def record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
                   config.visual_valid_result, config.visual_valid_result_dir)
   else:
     visual_data(model, epoch, step, loss, optimizer,
-              exact_match_total, f1_total, exact_match, f1, model)
+              exact_match_total, f1_total, exact_match, f1, mode,
+                visual_valid_result=config.visual_valid_result,
+                visual_valid_result_dir=config.visual_valid_result_dir)
   return exact_match_total, f1_total
 
 
