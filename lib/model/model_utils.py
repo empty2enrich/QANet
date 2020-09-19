@@ -119,6 +119,8 @@ class Embedding(torch.nn.Module):
     self.bert = load_bert(config.bert_config)
     self.use_position_embedding = config.use_position_embedding
     self.use_conv = config.use_conv
+    self.layer_normal = torch.nn.LayerNorm([config.bert_config.max_position_embeddings,
+                                  config.bert_config.hidden_size])
     if self.use_position_embedding:
       self.init_positon_embedding(config.bert_config.max_position_embeddings,
                                   config.bert_config.hidden_size)
@@ -137,6 +139,7 @@ class Embedding(torch.nn.Module):
     embeddings, _ = self.bert(input_ids, segment_ids)
     if self.use_position_embedding:
       embeddings = embeddings + self.position_embedding
+    embeddings = self.layer_normal(embeddings)
     if self.use_conv:
       embeddings = embeddings.unsqueeze(-1)
       embeddings = embeddings.permute(0, 3, 2, 1)
@@ -178,7 +181,7 @@ class Encoder(torch.nn.Module):
       embeddings = torch.relu(self.linear_1[index](embeddings))
       embeddings = torch.relu(self.linear_2[index](embeddings))
       embeddings = torch.relu(self.linear_3[index](embeddings))
-      embeddings += embeddings
+      embeddings += pre_embedding
       embeddings = self.normal[index](embeddings)
       pre_embedding = embeddings
     return embeddings
