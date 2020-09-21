@@ -113,6 +113,35 @@ class Attention(torch.nn.Module):
     return attention
 
 
+class AttentionPyramid(torch.nn.Module):
+  """
+  构造 attention 矩阵，对 attention 矩阵使用 conv。
+  """
+  def __init__(self, config):
+    self.config = config
+    input_len = config.bert_config.max_position_embeddings
+    layer_num = math.ceil(math.log(input_len, config.stride)) - 1
+    con_list = []
+    pool_list = []
+    torch.nn.MaxPool2d
+    self.conv = torch.nn.ModuleList([DepthwiseSeparableConv() for i in range(layer_num)])
+
+  def forward(self, query_tensor, value_tensor, attention_mask=None):
+    """
+
+    Args:
+      query_tensor: batch_size, len, dim
+      value_tensor: batch_size, len, dim
+      attention_mask: batch_size, len
+
+    Returns:
+
+    """
+    # size: batch_size, len, len
+    attention_matrix = torch.mm(query_tensor, value_tensor.permute(0, 2, 1))
+
+
+
 class Embedding(torch.nn.Module):
   def __init__(self, config):
     super(Embedding, self).__init__()

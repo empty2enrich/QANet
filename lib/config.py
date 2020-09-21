@@ -30,6 +30,7 @@ class Config(object):
     self.chan_out = 768
     self.kernel = 7
     self.dim = 2
+    self.stride = 2
     # bert config
     self.bert_config = BertConfig(bert_path="./resource/bert_model/bert",
                                   bert_class=BertModel,
