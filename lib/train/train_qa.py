@@ -234,7 +234,8 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
       if scheduler:
         scheduler.step()
       if step % config.record_interval_steps == 0:
-        save_model(model, config.model_save_dir, optimizer, epoch=epoch, steps=step)
+        save_model(model, config.model_save_dir, optimizer, epoch=epoch,
+                   steps=step, is_only_save_params=config.is_only_save_params)
 
       config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}, "
                          f"extract_match_total: {exact_match_total}, "

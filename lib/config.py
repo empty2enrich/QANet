@@ -51,7 +51,7 @@ class Config(object):
     self.mode = "train" # train, debug, valid, test
     self.record_interval_steps = 500
     self.model_save_dir = "../model"
-    self.is_continue_train = True
+    self.is_continue_train = False
     self.continue_checkpoint = 4000
     self.continue_epoch = 0
     self.start_epoch = 0

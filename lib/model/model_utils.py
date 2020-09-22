@@ -24,7 +24,7 @@ class DepthwiseSeparableConv(torch.nn.Module):
                                       padding=k // 2, bias=bias, stride=stride)
       self.pointwise_conv = torch.nn.Conv2d(in_channels=in_ch, out_channels=out_ch,
                                             kernel_size=1, padding=0, bias=bias,
-                                            stride=stride)
+                                            stride=1)
     else:
       raise Exception("Wrong dimension for Depthwise Separable Convolution!")
     # torch.nn.init.kaiming_normal_(self.depthwise_conv.weight)
@@ -123,6 +123,7 @@ class AttentionPyramid(torch.nn.Module):
   构造 attention 矩阵，对 attention 矩阵使用 conv。
   """
   def __init__(self, config):
+    super(AttentionPyramid, self).__init__()
     self.config = config
     self.input_len = config.bert_config.max_position_embeddings
     self.layer_num = math.ceil(math.log(self.input_len,
@@ -132,14 +133,15 @@ class AttentionPyramid(torch.nn.Module):
     normal = []
     for i in range(self.layer_num):
       chan_in = 1 if i == 0 else config.pyramid_chan
-      chan_out = 1 if i == self.layer_num - 1 else config.pyramid_chan
+      chan_out = config.bert_config.max_position_embeddings if i == self.layer_num - 1 else config.pyramid_chan
       con_list.append(DepthwiseSeparableConv(chan_in,
                                              chan_out,
                                              config.pyramid_kernel,
                                              config.pyramid_dim,
                                              stride=config.pyramid_stride))
       pool_list.append(torch.nn.MaxPool2d(config.pyramid_pool_kernel,
-                                          stride=1))
+                                          stride=1,
+                                          padding=config.pyramid_pool_kernel//2))
       normal.append(torch.nn.LayerNorm(math.ceil(self.input_len/ (2 ** (i + 1))),
                                        math.ceil(
                                          self.input_len / (2 ** (i + 1)))))
@@ -160,7 +162,7 @@ class AttentionPyramid(torch.nn.Module):
     """
     batch_size = query_tensor.shape[0]
     # size: batch_size, len, len
-    attention_matrix = torch.mm(query_tensor, value_tensor.permute(0, 2, 1))
+    attention_matrix = torch.matmul(query_tensor, value_tensor.permute(0, 2, 1))
     # TODO： attention mask 用上
     attention_matrix = torch.unsqueeze(attention_matrix, 1)
     for i in range(self.layer_num):
@@ -170,7 +172,7 @@ class AttentionPyramid(torch.nn.Module):
       attention_matrix = self.layer_normal[i](attention_matrix)
 
     # size: batch_size, 1, 2, 2
-    attention_matrix = reshape_tensor(attention_matrix, [batch_size, -1])
+    # attention_matrix = reshape_tensor(attention_matrix, [batch_size, -1, 4])
     return attention_matrix
 
 
