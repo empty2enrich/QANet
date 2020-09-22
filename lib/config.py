@@ -31,6 +31,12 @@ class Config(object):
     self.kernel = 7
     self.dim = 2
     self.stride = 2
+    # attention match pyramid
+    self.pyramid_chan = 64
+    self.pyramid_kernel = 5
+    self.pyramid_stride = 2
+    self.pyramid_dim = 2
+    self.pyramid_pool_kernel = 5
     # bert config
     self.bert_config = BertConfig(bert_path="./resource/bert_model/bert",
                                   bert_class=BertModel,
