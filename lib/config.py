@@ -62,7 +62,7 @@ class Config(object):
     # data visualization
     self.visual_data_dir = "./runs"
     self.visual_loss = True
-    self.visual_gradient = False
+    self.visual_gradient = True
     self.visual_parameter = False
     self.visual_optimizer = False
     self.visual_valid_result = True

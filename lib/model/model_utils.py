@@ -134,17 +134,22 @@ class AttentionPyramid(torch.nn.Module):
     for i in range(self.layer_num):
       chan_in = 1 if i == 0 else config.pyramid_chan
       chan_out = config.bert_config.max_position_embeddings if i == self.layer_num - 1 else config.pyramid_chan
-      con_list.append(DepthwiseSeparableConv(chan_in,
-                                             chan_out,
-                                             config.pyramid_kernel,
-                                             config.pyramid_dim,
-                                             stride=config.pyramid_stride))
+      con_list.append(torch.nn.Conv2d(chan_in, chan_out,
+                                      config.pyramid_kernel,
+                                      config.pyramid_stride,
+                                      padding=config.pyramid_kernel // 2))
+      # con_list.append(DepthwiseSeparableConv(chan_in,
+      #                                        chan_out,
+      #                                        config.pyramid_kernel,
+      #                                        config.pyramid_dim,
+      #                                        stride=config.pyramid_stride))
       pool_list.append(torch.nn.MaxPool2d(config.pyramid_pool_kernel,
                                           stride=1,
                                           padding=config.pyramid_pool_kernel//2))
-      normal.append(torch.nn.LayerNorm(math.ceil(self.input_len/ (2 ** (i + 1))),
-                                       math.ceil(
-                                         self.input_len / (2 ** (i + 1)))))
+      normal.append(torch.nn.LayerNorm(
+        (math.ceil(self.input_len/ (2 ** (i + 1))),
+        math.ceil(self.input_len / (2 ** (i + 1))))
+      ))
     self.pools = torch.nn.ModuleList(pool_list)
     self.conv = torch.nn.ModuleList(con_list)
     self.layer_normal = torch.nn.ModuleList(normal)
@@ -167,12 +172,13 @@ class AttentionPyramid(torch.nn.Module):
     attention_matrix = torch.unsqueeze(attention_matrix, 1)
     for i in range(self.layer_num):
       attention_matrix = self.conv[i](attention_matrix)
+      attention_matrix = torch.relu(attention_matrix)
       attention_matrix = self.pools[i](attention_matrix)
       attention_matrix = torch.relu(attention_matrix)
       attention_matrix = self.layer_normal[i](attention_matrix)
 
-    # size: batch_size, 1, 2, 2
-    # attention_matrix = reshape_tensor(attention_matrix, [batch_size, -1, 4])
+    # size: batch_size, length, 4
+    attention_matrix = reshape_tensor(attention_matrix, [batch_size, -1, 4])
     return attention_matrix
 
 
