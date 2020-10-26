@@ -35,7 +35,8 @@ class BertConfig(object):
                bert_path=None,
                vocab_file=None,
                bert_config_path=None,
-               bert_class=None):
+               bert_class=None,
+               freeze_paras=False):
     """Constructs BertConfig.
 
     Args:
@@ -59,6 +60,7 @@ class BertConfig(object):
         `BertModel`.
       initializer_range: The stdev of the truncated_normal_initializer for
         initializing all weight matrices.
+      freeze_paras(bool): 是否冻结 bert 的参数。True 冻结。
     """
     self.vocab_size = vocab_size
     self.hidden_size = hidden_size
@@ -80,6 +82,7 @@ class BertConfig(object):
     self.vocab_file = vocab_file
     self.bert_config_path = bert_config_path
     self.bert_class = bert_class
+    self.freeze_paras = freeze_paras
 
     # 根据 bert path 初始化 config, vocab 等信息
     self.init_with_bert_path()
@@ -124,14 +127,19 @@ def load_bert(bert_config):
 
   Args:
     bert_config(BertConfig):
-
+    freeze_paras(bool): 是否冻结参数， True 冻结。
   Returns:
 
   """
   if bert_config.use_pretrained_bert:
-    return bert_config.bert_class.from_pretrained(bert_config.bert_path).to(bert_config.device)
+    model = bert_config.bert_class.from_pretrained(bert_config.bert_path).to(bert_config.device)
   else:
-    return bert_config.bert_class(pytorch_transformers.BertConfig.from_dict(bert_config.to_dict())).to(bert_config.device)
+    model = bert_config.bert_class(pytorch_transformers.BertConfig.from_dict(bert_config.to_dict())).to(bert_config.device)
+
+  if bert_config.freeze_paras:
+    for _, param in model.named_parameters():
+      param.requires_grad_(False)
+  return model
 
 def reshape_tensor(tensor, shape):
   return tensor.contiguous().view(*shape)

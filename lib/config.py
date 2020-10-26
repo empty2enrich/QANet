@@ -40,7 +40,8 @@ class Config(object):
     # bert config
     self.bert_config = BertConfig(bert_path="./resource/bert_model/bert",
                                   bert_class=BertModel,
-                                  use_pretrained_bert=True)
+                                  use_pretrained_bert=True,
+                                  freeze_paras=True)
     self.do_lower_case = True
     # train cfg
     self.learning_rate = 3e-5

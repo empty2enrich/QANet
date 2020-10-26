@@ -154,6 +154,8 @@ class AttentionPyramid(torch.nn.Module):
     self.conv = torch.nn.ModuleList(con_list)
     self.layer_normal = torch.nn.ModuleList(normal)
 
+    self.linear = torch.nn.Linear(128 * 16, 4) # batch_size, 64, 128, 128
+
   def forward(self, query_tensor, value_tensor, attention_mask=None):
     """
 
@@ -170,15 +172,17 @@ class AttentionPyramid(torch.nn.Module):
     attention_matrix = torch.matmul(query_tensor, value_tensor.permute(0, 2, 1))
     # TODO： attention mask 用上
     attention_matrix = torch.unsqueeze(attention_matrix, 1)
-    for i in range(self.layer_num):
+    for i in range(0, 2):
       attention_matrix = self.conv[i](attention_matrix)
       attention_matrix = torch.relu(attention_matrix)
       attention_matrix = self.pools[i](attention_matrix)
       attention_matrix = torch.relu(attention_matrix)
       attention_matrix = self.layer_normal[i](attention_matrix)
 
+    attention_matrix = reshape_tensor(attention_matrix, (batch_size, 512, -1))
+    attention_matrix = self.linear(attention_matrix)
     # size: batch_size, length, 4
-    attention_matrix = reshape_tensor(attention_matrix, [batch_size, -1, 4])
+    # attention_matrix = reshape_tensor(attention_matrix, [batch_size, -1, 4])
     return attention_matrix
 
 
