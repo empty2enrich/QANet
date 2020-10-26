@@ -154,7 +154,7 @@ class AttentionPyramid(torch.nn.Module):
     self.conv = torch.nn.ModuleList(con_list)
     self.layer_normal = torch.nn.ModuleList(normal)
 
-    self.linear = torch.nn.Linear(128 * 16, 4) # batch_size, 64, 128, 128
+    self.linear = torch.nn.Linear(128 * 64, 4) # batch_size, 64, 256, 256
 
   def forward(self, query_tensor, value_tensor, attention_mask=None):
     """
@@ -168,22 +168,27 @@ class AttentionPyramid(torch.nn.Module):
 
     """
     batch_size = query_tensor.shape[0]
+    cnn_datas = []
     # size: batch_size, len, len
     attention_matrix = torch.matmul(query_tensor, value_tensor.permute(0, 2, 1))
     # TODO： attention mask 用上
     attention_matrix = torch.unsqueeze(attention_matrix, 1)
-    for i in range(0, 2):
+    for i in range(0, 1):
       attention_matrix = self.conv[i](attention_matrix)
       attention_matrix = torch.relu(attention_matrix)
       attention_matrix = self.pools[i](attention_matrix)
       attention_matrix = torch.relu(attention_matrix)
       attention_matrix = self.layer_normal[i](attention_matrix)
+      cnn_datas.append(attention_matrix)
 
     attention_matrix = reshape_tensor(attention_matrix, (batch_size, 512, -1))
     attention_matrix = self.linear(attention_matrix)
     # size: batch_size, length, 4
     # attention_matrix = reshape_tensor(attention_matrix, [batch_size, -1, 4])
-    return attention_matrix
+    if self.config.visual_cnn:
+      return attention_matrix, cnn_datas
+    else:
+      return attention_matrix
 
 
 class Embedding(torch.nn.Module):

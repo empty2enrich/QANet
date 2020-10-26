@@ -9,9 +9,10 @@ import torch
 
 from lib.utils import BertConfig, load_bert, mask
 from lib.config import Config
+from lib.model.model_base import ModelBase
 from lib.model.model_utils import DepthwiseSeparableConv, Attention, Encoder, Embedding
 
-class ModelBaseLine(torch.nn.Module):
+class ModelBaseLine(ModelBase):
   """
   The model of baseline.
   """
@@ -22,8 +23,8 @@ class ModelBaseLine(torch.nn.Module):
     Args:
       config(Config):
     """
-    super(ModelBaseLine, self).__init__()
-    self.config = config
+    super(ModelBaseLine, self).__init__(config)
+    # self.config = config
     # embedding
     self.embed_word = Embedding(config)
 
@@ -39,6 +40,7 @@ class ModelBaseLine(torch.nn.Module):
     # pointer
     self.pointer_linear = torch.nn.Linear(config.bert_config.hidden_size, 2)
     # self.pointer_softmax = torch.nn.Softmax(dim=-2)
+
 
 
   def pointer(self, embeddings, input_mask):

@@ -6,13 +6,14 @@
 #
 
 import torch
+from .model_base import ModelBase
 from .model_utils import Embedding, AttentionPyramid
 from ..utils import reshape_tensor, mask
 
-class ModelMatchPyramid(torch.nn.Module):
+class ModelMatchPyramid(ModelBase):
   def __init__(self, config):
-    super(ModelMatchPyramid, self).__init__()
-    self.config = config
+    super(ModelMatchPyramid, self).__init__(config)
+    # self.config = config
     self.embedding = Embedding(config)
     self.attention_pyramid = AttentionPyramid(config)
     self.linear = torch.nn.Linear(4, 2)
@@ -31,6 +32,8 @@ class ModelMatchPyramid(torch.nn.Module):
 
   def forward(self, input_ids, input_mask, segment_ids):
     embeddings = self.embedding(input_ids, segment_ids)
-    embeddings = self.attention_pyramid(embeddings, embeddings, input_mask)
+    if not self.config.visual_cnn:
+      embeddings = self.attention_pyramid(embeddings, embeddings, input_mask)
+    else:
+      embeddings, self.additional_data = self.attention_pyramid(embeddings, embeddings, input_mask)
     return self.pointer(embeddings, input_mask)
-

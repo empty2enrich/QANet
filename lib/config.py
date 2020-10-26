@@ -72,6 +72,9 @@ class Config(object):
     self.visual_loss_dir = "../log/losses"
     self.visual_optimizer_dir = "../log/optimizer"
     self.visual_valid_result_dir = "../log/valid"
+    ## 可视化卷积
+    self.visual_cnn = False
+    self.visual_cnn_dir = "../log/cnn"
 
     # data preprocess
     self.data_cfg = {

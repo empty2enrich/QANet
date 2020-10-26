@@ -222,6 +222,7 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
       loss = calculate_loss(end_embeddings, end_positions, log_sofmax,
                             start_embeddings, start_positions)
       losses.append(loss.item())
+      loss.backward()
 
       exact_match_total, f1_total = record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
                                                                       end_embeddings, end_positions, epoch,
@@ -229,7 +230,6 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
                                                                       optimizer, softmax,
                                                                       step, tokenizer, mode="train")
       # 参数更新
-      loss.backward()
       optimizer.step()
       if scheduler:
         scheduler.step()
