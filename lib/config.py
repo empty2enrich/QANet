@@ -26,19 +26,19 @@ class Config(object):
     self.training = True
     # cnn
     self.use_conv=False
-    self.chan_in = 768
-    self.chan_out = 768
-    self.kernel = 7
+    self.chan_in = 64
+    self.chan_out = 64
+    self.kernel = 3
     self.dim = 2
     self.stride = 2
     # attention match pyramid
     self.pyramid_chan = 64
-    self.pyramid_kernel = 5
-    self.pyramid_stride = 2
+    self.pyramid_kernel = 3
+    self.pyramid_stride = 1
     self.pyramid_dim = 2
-    self.pyramid_pool_kernel = 5
+    self.pyramid_pool_kernel = 2
     # bert config
-    self.freeze_bert = False
+    self.freeze_bert = True
     self.bert_config = BertConfig(bert_path="./resource/bert_model/bert",
                                   bert_class=BertModel,
                                   use_pretrained_bert=True,
@@ -54,7 +54,7 @@ class Config(object):
     self.mode = "train" # train, debug, valid, test
     self.record_interval_steps = 500
     self.model_save_dir = "../model"
-    self.is_continue_train = True
+    self.is_continue_train = False
     self.continue_checkpoint = 500
     self.continue_epoch = 0
     self.start_epoch = 0

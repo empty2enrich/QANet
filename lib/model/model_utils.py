@@ -128,13 +128,22 @@ class AttentionPyramid(torch.nn.Module):
     self.input_len = config.bert_config.max_position_embeddings
     self.layer_num = math.ceil(math.log(self.input_len,
                                         config.pyramid_stride)) - 1
+    self.layer_num = 3 # TODO: 先试试 3
     con_list = []
     pool_list = []
     normal = []
+    chan_in = 1
+    chan_out = config.pyramid_chan
     for i in range(self.layer_num):
-      chan_in = 1 if i == 0 else config.pyramid_chan
-      chan_out = config.bert_config.max_position_embeddings if i == self.layer_num - 1 else config.pyramid_chan
       con_list.append(torch.nn.Conv2d(chan_in, chan_out,
+                                      config.pyramid_kernel,
+                                      config.pyramid_stride,
+                                      padding=config.pyramid_kernel // 2))
+      con_list.append(torch.nn.Conv2d(chan_out, chan_out,
+                                      config.pyramid_kernel,
+                                      config.pyramid_stride,
+                                      padding=config.pyramid_kernel // 2))
+      con_list.append(torch.nn.Conv2d(chan_out, chan_out,
                                       config.pyramid_kernel,
                                       config.pyramid_stride,
                                       padding=config.pyramid_kernel // 2))
@@ -144,17 +153,19 @@ class AttentionPyramid(torch.nn.Module):
       #                                        config.pyramid_dim,
       #                                        stride=config.pyramid_stride))
       pool_list.append(torch.nn.MaxPool2d(config.pyramid_pool_kernel,
-                                          stride=1,
+                                          stride=2,
                                           padding=config.pyramid_pool_kernel//2))
       normal.append(torch.nn.LayerNorm(
         (math.ceil(self.input_len/ (2 ** (i + 1))),
         math.ceil(self.input_len / (2 ** (i + 1))))
       ))
+      chan_in = chan_out
+      chan_out *= 2
     self.pools = torch.nn.ModuleList(pool_list)
     self.conv = torch.nn.ModuleList(con_list)
     self.layer_normal = torch.nn.ModuleList(normal)
 
-    self.linear = torch.nn.Linear(128 * 64, 4) # batch_size, 64, 256, 256
+    self.linear = torch.nn.Linear(32 * 64, 4) # batch_size, 256, 64, 64
 
   def forward(self, query_tensor, value_tensor, attention_mask=None):
     """
@@ -173,9 +184,11 @@ class AttentionPyramid(torch.nn.Module):
     attention_matrix = torch.matmul(query_tensor, value_tensor.permute(0, 2, 1))
     # TODO： attention mask 用上
     attention_matrix = torch.unsqueeze(attention_matrix, 1)
-    for i in range(0, 1):
-      attention_matrix = self.conv[i](attention_matrix)
-      attention_matrix = torch.relu(attention_matrix)
+    for i in range(0, self.layer_num):
+      attention_matrix = self.conv[(i - 1) * 3](attention_matrix)
+      attention_matrix = self.conv[(i - 1) * 3 + 1](attention_matrix)
+      attention_matrix = self.conv[(i - 1) * 3 + 2](attention_matrix)
+      attention_matrix = torch.relu(attention_matrix) # todo: 测试下有、没有性能一样不
       attention_matrix = self.pools[i](attention_matrix)
       attention_matrix = torch.relu(attention_matrix)
       attention_matrix = self.layer_normal[i](attention_matrix)
