@@ -237,7 +237,7 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
         save_model(model, config.model_save_dir, optimizer, epoch=epoch,
                    steps=step, is_only_save_params=config.is_only_save_params)
 
-      config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}, "
+      config.logger.info(f"TRAINING: Loss: {loss}, epoch:{epoch}, step: {step}, "
                          f"extract_match_total: {exact_match_total}, "
                          f"f1_total: {f1_total}, "
                          f"extract_match: {exact_match_total/((step + 1)* config.batch_size)},"
@@ -248,9 +248,9 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
 
   loss_avg = np.mean(losses)
   config.logger.info(
-    f"Epoch {epoch} loss {loss_avg} extract_macth_total {exact_match_total} "
-    f"f1_total {f1_total} extract_match {exact_match_total/len(train_data)} "
-    f"f1 {f1_total / len(train_data)}\n")
+    f"TRAINING: Epoch {epoch} loss {loss_avg} extract_macth_total {exact_match_total} "
+    f"f1_total {f1_total} extract_match {exact_match_total/((step + 1)* config.batch_size)} "
+    f"f1 {f1_total / ((step + 1)* config.batch_size)}\n")
 
 def eval_qa(model, optimizer, config, epoch, mode="test"):
   """
@@ -285,7 +285,7 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
                                                                       exact_match_total, f1_total, input_ids, loss, model,
                                                                       optimizer, softmax,
                                                                       step, tokenizer, mode)
-      config.logger.info(f"Loss: {loss}, epoch:{epoch}, step: {step}, "
+      config.logger.info(f"{mode}:  Loss: {loss}, epoch:{epoch}, step: {step}, "
                          f"extract_match_total: {exact_match_total}, "
                          f"f1_total: {f1_total}, "
                          f"extract_match: {exact_match_total/((step + 1)* config.batch_size)},"
@@ -296,9 +296,9 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
 
   loss_avg = np.mean(losses)
   config.logger.info(
-    f"Epoch {epoch} loss {loss_avg} extract_macth_total {exact_match_total} "
-    f"f1_total {f1_total} extract_match {exact_match_total/len(train_data)} "
-    f"f1 {f1_total / len(train_data)}\n")
+    f"{mode}: Epoch {epoch} loss {loss_avg} extract_macth_total {exact_match_total} "
+    f"f1_total {f1_total} extract_match {exact_match_total/((step + 1)* config.batch_size)} "
+    f"f1 {f1_total / ((step + 1)* config.batch_size)}\n")
 
 def record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
                                       end_embeddings, end_positions, epoch,

@@ -38,11 +38,13 @@ class Config(object):
     self.pyramid_dim = 2
     self.pyramid_pool_kernel = 5
     # bert config
+    self.freeze_bert = False
     self.bert_config = BertConfig(bert_path="./resource/bert_model/bert",
                                   bert_class=BertModel,
                                   use_pretrained_bert=True,
-                                  freeze_paras=True)
+                                  freeze_paras=self.freeze_bert)
     self.do_lower_case = True
+
     # train cfg
     self.learning_rate = 3e-5
     self.batch_size = 4
@@ -52,18 +54,18 @@ class Config(object):
     self.mode = "train" # train, debug, valid, test
     self.record_interval_steps = 500
     self.model_save_dir = "../model"
-    self.is_continue_train = False
-    self.continue_checkpoint = 4000
+    self.is_continue_train = True
+    self.continue_checkpoint = 500
     self.continue_epoch = 0
     self.start_epoch = 0
-    self.epochs = 3
+    self.epochs = 2
     self.log_path = "../log/log.txt"
     self.logger = get_logger(self.log_path)
 
     # data visualization
     self.visual_data_dir = "./runs"
     self.visual_loss = True
-    self.visual_gradient = True
+    self.visual_gradient = False
     self.visual_parameter = False
     self.visual_optimizer = False
     self.visual_valid_result = True
