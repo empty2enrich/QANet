@@ -19,6 +19,7 @@ from tqdm import tqdm
 
 def main(config):
   model = load_model(ModelMatchPyramid, config)
+  print(model)
   optimizer = get_adam_optimizer(model, config)
   for epoch in tqdm(range(config.start_epoch, config.epochs),
                     total=config.epochs,

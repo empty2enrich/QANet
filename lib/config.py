@@ -26,17 +26,21 @@ class Config(object):
     self.training = True
     # cnn
     self.use_conv=False
-    self.chan_in = 768
-    self.chan_out = 768
-    self.kernel = 7
+    self.chan_in = 64
+    self.chan_out = 64
+    self.kernel = 3
     self.dim = 2
     self.stride = 2
+
     # attention match pyramid
     self.pyramid_chan = 64
-    self.pyramid_kernel = 5
-    self.pyramid_stride = 2
+    self.pyramid_kernel = 3
+    self.pyramid_stride = 1
     self.pyramid_dim = 2
-    self.pyramid_pool_kernel = 5
+    self.pyramid_pool_kernel = 2
+    self.pyramid_pool_stride = 2
+    self.pyramid_resnet = True
+
     # bert config
     self.freeze_bert = False
     self.bert_config = BertConfig(bert_path="./resource/bert_model/bert",
@@ -46,8 +50,8 @@ class Config(object):
     self.do_lower_case = True
 
     # train cfg
-    self.learning_rate = 3e-5
-    self.batch_size = 4
+    self.learning_rate = 1e-5
+    self.batch_size = 6
     self.beta1 = 0.9
     self.beta2 = 0.999
     self.is_only_save_params = True
@@ -55,10 +59,10 @@ class Config(object):
     self.record_interval_steps = 500
     self.model_save_dir = "../model"
     self.is_continue_train = True
-    self.continue_checkpoint = 500
+    self.continue_checkpoint = 2000
     self.continue_epoch = 0
-    self.start_epoch = 0
-    self.epochs = 2
+    self.start_epoch = 2
+    self.epochs = 3
     self.log_path = "../log/log.txt"
     self.logger = get_logger(self.log_path)
 

@@ -7,7 +7,7 @@
 
 import math
 import torch
-from lib.utils import reshape_tensor, load_bert
+from lib.utils import reshape_tensor, load_bert, multiply
 
 class DepthwiseSeparableConv(torch.nn.Module):
   def __init__(self, in_ch, out_ch, k, dim=1, bias=True, stride=1):
@@ -126,15 +126,28 @@ class AttentionPyramid(torch.nn.Module):
     super(AttentionPyramid, self).__init__()
     self.config = config
     self.input_len = config.bert_config.max_position_embeddings
+    # self.layer_num = math.ceil(math.log(self.input_len,
+    #                                     config.pyramid_pool_stride)) - 1
     self.layer_num = math.ceil(math.log(self.input_len,
-                                        config.pyramid_stride)) - 1
+                                        config.pyramid_pool_stride)) - 4
+
+    # self.layer_num = 3 # TODO: 先试试 3
     con_list = []
     pool_list = []
+    adptors = []
     normal = []
+    chan_in = 1
+    chan_out = config.pyramid_chan
     for i in range(self.layer_num):
-      chan_in = 1 if i == 0 else config.pyramid_chan
-      chan_out = config.bert_config.max_position_embeddings if i == self.layer_num - 1 else config.pyramid_chan
       con_list.append(torch.nn.Conv2d(chan_in, chan_out,
+                                      config.pyramid_kernel,
+                                      config.pyramid_stride,
+                                      padding=config.pyramid_kernel // 2))
+      con_list.append(torch.nn.Conv2d(chan_out, chan_out,
+                                      config.pyramid_kernel,
+                                      config.pyramid_stride,
+                                      padding=config.pyramid_kernel // 2))
+      con_list.append(torch.nn.Conv2d(chan_out, chan_out,
                                       config.pyramid_kernel,
                                       config.pyramid_stride,
                                       padding=config.pyramid_kernel // 2))
@@ -144,17 +157,30 @@ class AttentionPyramid(torch.nn.Module):
       #                                        config.pyramid_dim,
       #                                        stride=config.pyramid_stride))
       pool_list.append(torch.nn.MaxPool2d(config.pyramid_pool_kernel,
-                                          stride=1,
-                                          padding=config.pyramid_pool_kernel//2))
-      normal.append(torch.nn.LayerNorm(
-        (math.ceil(self.input_len/ (2 ** (i + 1))),
-        math.ceil(self.input_len / (2 ** (i + 1))))
-      ))
+                                          stride=config.pyramid_pool_stride,
+                                          # padding=config.pyramid_pool_kernel//2))
+                                          padding=0))
+      cur_len = math.ceil(self.input_len/ (2 ** (i + 1)))
+      normal.append(torch.nn.LayerNorm((cur_len, cur_len)))
+
+
+      adptors.append(ResNetCNNAdaptor((1, self.input_len, self.input_len),
+                                      (chan_out, cur_len, cur_len)))
+
+
+      chan_in = chan_out
+      chan_out *= 2
     self.pools = torch.nn.ModuleList(pool_list)
     self.conv = torch.nn.ModuleList(con_list)
     self.layer_normal = torch.nn.ModuleList(normal)
+    self.adaptor = torch.nn.ModuleList(adptors)
 
-    self.linear = torch.nn.Linear(128 * 64, 4) # batch_size, 64, 256, 256
+    # (512 / 2 ** layer_num) ** 2 * 64 * 2 **(layer_num -1) / 512
+
+    self.linear = torch.nn.Linear(self.get_linear_input_feature(), 4)
+
+  def get_linear_input_feature(self):
+    return int((512 / 2 ** self.layer_num) ** 2 * 64 * 2 **(self.layer_num -1) / 512)
 
   def forward(self, query_tensor, value_tensor, attention_mask=None):
     """
@@ -173,11 +199,15 @@ class AttentionPyramid(torch.nn.Module):
     attention_matrix = torch.matmul(query_tensor, value_tensor.permute(0, 2, 1))
     # TODO： attention mask 用上
     attention_matrix = torch.unsqueeze(attention_matrix, 1)
-    for i in range(0, 1):
-      attention_matrix = self.conv[i](attention_matrix)
-      attention_matrix = torch.relu(attention_matrix)
+    origin_matrix = attention_matrix
+    for i in range(0, self.layer_num):
+      attention_matrix = self.conv[i * 3](attention_matrix)
+      attention_matrix = self.conv[i * 3 + 1](attention_matrix)
+      attention_matrix = self.conv[i * 3 + 2](attention_matrix)
+      attention_matrix = torch.relu(attention_matrix) # todo: 测试下有、没有性能一样不
       attention_matrix = self.pools[i](attention_matrix)
       attention_matrix = torch.relu(attention_matrix)
+      attention_matrix += self.adaptor[i](origin_matrix)
       attention_matrix = self.layer_normal[i](attention_matrix)
       cnn_datas.append(attention_matrix)
 
@@ -263,3 +293,29 @@ class Encoder(torch.nn.Module):
       embeddings = self.normal[index](embeddings)
       pre_embedding = embeddings
     return embeddings
+
+################################################################################
+################################################################################
+################################################################################
+
+class ResNetCNNAdaptor(torch.nn.Module):
+  """
+  CNN 的 ResNet 适配器
+  cnn 输入与深层的 cnn 输入 shape 不一致，无法直接相加，使用 linear 修改输入 shape。
+  """
+  def __init__(self, input_shape, output_shape):
+    super(ResNetCNNAdaptor, self).__init__()
+    self.input_shape = list(input_shape)
+    self.output_shape = list(output_shape)
+    scale = multiply(*self.input_shape) / multiply(*self.output_shape)
+    self.conv = torch.nn.Conv2d(self.input_shape[0], int(self.input_shape[0] / scale), kernel_size=1)
+    # self.linear = torch.nn.Linear(self.input_shape[2],
+    #                               int(self.input_shape[2] / scale))
+
+  def forward(self, tensor):
+    batch_size = tensor.shape[0]
+    tensor = self.conv(tensor)
+    # tensor = reshape_tensor(tensor, (batch_size, self.output_shape[0], -1))
+    # tensor = self.linear(tensor)
+    tensor = reshape_tensor(tensor, [batch_size] + self.output_shape)
+    return tensor
