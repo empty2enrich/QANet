@@ -78,9 +78,14 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
 
     ######## question tokens
     question_tokens = []
-    segment_ids = []
+    question_segment_ids = []
     tokens.append("[CLS]")
-    segment_ids.append(0)
+    question_segment_ids.append(0)
+    for token in query_tokens:
+      question_tokens.append(token)
+      question_segment_ids.append(0)
+    question_tokens.append("[SEP]")
+    question_segment_ids.append(0)
 
 
     for (doc_span_index, doc_span) in enumerate(doc_spans):
@@ -90,11 +95,11 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
       segment_ids = []
       tokens.append("[CLS]")
       segment_ids.append(0)
-      for token in query_tokens:
-        tokens.append(token)
-        segment_ids.append(0)
-      tokens.append("[SEP]")
-      segment_ids.append(0)
+      # for token in query_tokens:
+      #   tokens.append(token)
+      #   segment_ids.append(0)
+      # tokens.append("[SEP]")
+      # segment_ids.append(0)
 
       for i in range(doc_span.length):
         split_token_index = doc_span.start + i
@@ -103,12 +108,12 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
                                                split_token_index)
         token_is_max_context[len(tokens)] = is_max_context
         tokens.append(all_doc_tokens[split_token_index])
-        segment_ids.append(1)
+        segment_ids.append(0)
       tokens.append("[SEP]")
-      segment_ids.append(1)
+      segment_ids.append(0)
 
       input_ids = tokenizer.convert_tokens_to_ids(tokens)
-
+      question_ids = tokenizer.convert_tokens_to_ids(question_tokens)
       # The mask has 1 for real tokens and 0 for padding tokens. Only real
       # tokens are attended to.
       input_mask = [1] * len(input_ids)
@@ -151,11 +156,14 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
                        'example_index': example_index,
                        'doc_span_index': doc_span_index,
                        'tokens': tokens,
+                       'question_tokens': question_tokens,
                        'token_to_orig_map': token_to_orig_map,
                        'token_is_max_context': token_is_max_context,
                        'input_ids': input_ids,
                        'input_mask': input_mask,
                        'segment_ids': segment_ids,
+                       'question_ids': question_ids,
+                       'question_segment_ids': question_segment_ids,
                        'start_position': start_position,
                        'end_position': end_position})
       unique_id += 1

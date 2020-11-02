@@ -260,8 +260,17 @@ def generate_examples(is_training, output_files, repeat_limit, train_data):
   json.dump(examples, open(output_files[0], 'w'))
   return examples
 
-def merge_tokens(*tokens):
-  tokens_merged = []
-  segment_ids = []
-  token_to_orig_map_merged = []
-  token_is_max_context = []
+# def merge_tokens(*tokens):
+#   tokens_merged = []
+#   segment_ids = []
+#   token_to_orig_map_merged = []
+#   token_is_max_context = []
+#   tokens.append("[CLS]")
+#   segment_ids.append(0)
+#
+#   for idx, item in enumerate(tokens):
+#     token_to_orig_map = {}
+#     for token in item:
+#       tokens_merged.append(token)
+#       segment_ids.append(idx)
+#       token_to_orig_map[len()]
