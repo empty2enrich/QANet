@@ -12,6 +12,7 @@ import torch
 
 from lib.data_prerocess.utils import *
 from lib.tokenization.bert_finetune_tokenization import *
+from torch.utils.data import TensorDataset, DataLoader
 
 def read_train_data(input_file):
   with open(input_file, 'r') as f:
@@ -79,12 +80,14 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
 
     ######## question tokens
     question_tokens = []
+    question_mask = [0 for _ in range(max_query_length)]
     question_segment_ids = []
     tokens.append("[CLS]")
     question_segment_ids.append(0)
-    for token in query_tokens:
+    for idx, token in enumerate(query_tokens):
       question_tokens.append(token)
       question_segment_ids.append(0)
+      question_mask[idx] = 1
     question_tokens.append("[SEP]")
     question_segment_ids.append(0)
 
@@ -164,6 +167,7 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
                        'input_mask': input_mask,
                        'segment_ids': segment_ids,
                        'question_ids': question_ids,
+                       'question_mask': question_mask,
                        'question_segment_ids': question_segment_ids,
                        'start_position': start_position,
                        'end_position': end_position})
@@ -201,12 +205,19 @@ def load_data(config, mode="train"):
                                 dtype=torch.long)
   all_segment_ids = torch.tensor([f['segment_ids'] for f in train_features],
                                  dtype=torch.long)
+  question_input_ids = torch.tensor([f['question_ids'] for f in train_features],
+                               dtype=torch.long)
+  question_input_mask = torch.tensor([f['question_mask'] for f in train_features],
+                                dtype=torch.long)
+  question_segment_ids = torch.tensor([f['question_segment_ids'] for f in train_features],
+                                 dtype=torch.long)
   # true label
   all_start_positions = torch.tensor(
     [f['start_position'] for f in train_features], dtype=torch.long)
   all_end_positions = torch.tensor([f['end_position'] for f in train_features],
                                    dtype=torch.long)
   train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
+                             question_input_ids, question_input_mask, question_segment_ids,
                              all_start_positions, all_end_positions)
   train_dataloader = DataLoader(train_data, batch_size=config.batch_size,
                                 shuffle=True)

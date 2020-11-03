@@ -17,7 +17,7 @@ from my_py_toolkit.torch.utils import load_model, get_adam_optimizer
 from tqdm import tqdm
 
 def main(config):
-  model = load_model(ModelMatchPyramid, config)
+  model = load_model(ModelBaseLine, config)
   print(model)
   optimizer = get_adam_optimizer(model, config)
   for epoch in tqdm(range(config.start_epoch, config.epochs),

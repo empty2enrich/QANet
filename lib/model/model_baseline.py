@@ -80,15 +80,3 @@ class ModelBaseLine(ModelBase):
     embedding = self.encoder(embedding, value_embedding, input_mask)
     start, end = self.pointer(embedding, input_mask)
     return start, end
-
-
-class ModelBaselineSQC(ModelBase):
-  """
-  Model baseline, question tokens 和 context tokens 是分开的。
-  """
-  def __init__(self, config):
-    """"""
-    super(ModelBaselineSQC, self).__init__(config)
-    self.embedding = Embedding(config)
-
-    self.pointor = torch.nn.Linear(config.bert_config.hidden_size, 2)

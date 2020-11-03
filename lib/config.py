@@ -54,7 +54,7 @@ class Config(object):
     self.do_lower_case = True
 
     # train cfg
-    self.learning_rate = 1e-5
+    self.learning_rate = 3e-5
     self.batch_size = 6
     self.beta1 = 0.9
     self.beta2 = 0.999
