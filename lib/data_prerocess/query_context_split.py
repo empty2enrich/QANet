@@ -8,6 +8,7 @@
 import json
 import os
 import tqdm
+import torch
 
 from lib.data_prerocess.utils import *
 from lib.tokenization.bert_finetune_tokenization import *
@@ -173,5 +174,41 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
 
 
 
-
+def load_data(config, mode="train"):
+  tokenizer = FullTokenizer(
+    vocab_file=config.bert_config.vocab_file, do_lower_case=config.do_lower_case)
+  cur_cfg = config.data_cfg.get(mode, {})
+  feature_path = cur_cfg.get("feature_path")
+  data_file = cur_cfg.get("data_file")
+  is_train = cur_cfg.get("is_train")
+  if not os.path.exists(feature_path):
+    json2features(data_file,
+                  [feature_path.replace('_features_', '_examples_'),
+                   feature_path],
+                  tokenizer, is_training=is_train,
+                  max_seq_length=config.bert_config.max_position_embeddings)
+  # if not os.path.exists(config.dev_dir1) or not os.path.exists(config.dev_dir2):
+  #   json2features(config.dev_file, [config.dev_dir1, config.dev_dir2],
+  #                 tokenizer,
+  #                 is_training=False,
+  #                 max_seq_length=config.bert_config.max_position_embeddings)
+  train_features = json.load(open(feature_path, 'r'))
+  # dev_examples = json.load(open(config.dev_dir1, 'r'))
+  # dev_features = json.load(open(config.dev_dir2, 'r'))
+  all_input_ids = torch.tensor([f['input_ids'] for f in train_features],
+                               dtype=torch.long)
+  all_input_mask = torch.tensor([f['input_mask'] for f in train_features],
+                                dtype=torch.long)
+  all_segment_ids = torch.tensor([f['segment_ids'] for f in train_features],
+                                 dtype=torch.long)
+  # true label
+  all_start_positions = torch.tensor(
+    [f['start_position'] for f in train_features], dtype=torch.long)
+  all_end_positions = torch.tensor([f['end_position'] for f in train_features],
+                                   dtype=torch.long)
+  train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
+                             all_start_positions, all_end_positions)
+  train_dataloader = DataLoader(train_data, batch_size=config.batch_size,
+                                shuffle=True)
+  return tokenizer, train_dataloader
 

@@ -10,7 +10,6 @@ import torch.nn.functional as F
 import traceback
 
 from lib.config import Config
-from lib.data_process import load_data
 from lib.model.model_baseline import ModelBaseLine
 from lib.model.model_macth_pyramid import ModelMatchPyramid
 from lib.train.train_qa import train_qa, eval_qa

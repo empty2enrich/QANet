@@ -14,7 +14,7 @@ import traceback
 
 from collections import Counter
 from lib.config import Config
-from lib.data_process import load_data
+from lib.data_prerocess.data_process_base import load_data
 from my_py_toolkit.torch.utils import save_model
 from my_py_toolkit.data_visulization.tensorboard import visual_data
 

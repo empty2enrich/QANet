@@ -13,6 +13,10 @@ class Config(object):
   def __init__(self):
     self.device = "cuda"
     self.dropout = 0.1
+
+    # data preprocess
+    self.split_qc = True # 是否把 context token 与 question token 分开
+
     # encoder
     self.use_position_embedding = True
     self.encoder_hidden_layer_number = 11

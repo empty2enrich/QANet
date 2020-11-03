@@ -70,7 +70,16 @@ class Attention(torch.nn.Module):
     return tensor
 
   def forward(self, query_tensor, value_tensor, attention_mask=None):
-    """"""
+    """
+    输出的 length 与 query_tensor  length 保持一致。
+    Args:
+      query_tensor:
+      value_tensor:
+      attention_mask:
+
+    Returns:
+
+    """
     batch_size, quert_length, _ = query_tensor.shape
     _, value_length, _ = value_tensor.shape
 
@@ -261,7 +270,8 @@ class Encoder(torch.nn.Module):
   对词向量进行编码
   """
 
-  def __init__(self, encoder_layer_num, dim, max_position, intermediate_dim, attention_head_num,
+  def __init__(self, encoder_layer_num, dim, max_position, intermediate_dim,
+               attention_head_num,
                attention_pro_drop, attention_use_bias=False):
     super(Encoder, self).__init__()
     self.layer_num = encoder_layer_num
@@ -282,10 +292,10 @@ class Encoder(torch.nn.Module):
       torch.nn.LayerNorm([max_position, dim]) for _ in range(encoder_layer_num)
     ])
 
-  def forward(self, embeddings, input_mask):
+  def forward(self, embeddings, other_embeddings, input_mask):
     pre_embedding = embeddings
     for index in range(self.layer_num):
-      embeddings = self.attention_layer[index](embeddings, embeddings, input_mask)
+      embeddings = self.attention_layer[index](embeddings, other_embeddings, input_mask)
       embeddings = torch.relu(self.linear_1[index](embeddings))
       embeddings = torch.relu(self.linear_2[index](embeddings))
       embeddings = torch.relu(self.linear_3[index](embeddings))
@@ -294,8 +304,9 @@ class Encoder(torch.nn.Module):
       pre_embedding = embeddings
     return embeddings
 
+
 ################################################################################
-################################################################################
+################################# RNN #############################################
 ################################################################################
 
 class ResNetCNNAdaptor(torch.nn.Module):
