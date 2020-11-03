@@ -260,6 +260,21 @@ def generate_examples(is_training, output_files, repeat_limit, train_data):
   json.dump(examples, open(output_files[0], 'w'))
   return examples
 
+def generate_question_feature(question_tokens, max_query_len, tokenizer):
+  tokens = []
+  input_ids = []
+  input_mask = [1 for _ in range(max_query_len)]
+  segment_ids = [0 for _ in range(max_query_len)]
+
+  tokens.append("[CLS]")
+  segment_ids.append(0)
+
+
+  tokens.append("[SEP]")
+  segment_ids.append(0)
+
+
+
 # def merge_tokens(*tokens):
 #   tokens_merged = []
 #   segment_ids = []

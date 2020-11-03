@@ -36,7 +36,7 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
   unique_id = 1000000000
   for (example_index, example) in enumerate(tqdm(examples)):
     query_tokens = tokenizer.tokenize(example['question'])
-    if len(query_tokens) > max_query_length:
+    if len(query_tokens) > max_query_length - 2:
       query_tokens = query_tokens[0:max_query_length - 2]
 
     tok_to_orig_index = []
@@ -96,6 +96,7 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
     while len(question_ids) < max_query_length:
       question_ids.append(0)
       question_segment_ids.append(0)
+    print(f"Length of question ids: {len(question_ids)}")
 
     for (doc_span_index, doc_span) in enumerate(doc_spans):
       tokens = []
@@ -163,6 +164,9 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
             doc_offset = len(query_tokens) + 2
             start_position = tok_start_position - doc_start + doc_offset
             end_position = tok_end_position - doc_start + doc_offset
+
+      if len(question_ids) != max_query_length:
+        print("ERROR")
       features.append({'unique_id': unique_id,
                        'example_index': example_index,
                        'doc_span_index': doc_span_index,
