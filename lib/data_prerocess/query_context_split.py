@@ -37,7 +37,7 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
   for (example_index, example) in enumerate(tqdm(examples)):
     query_tokens = tokenizer.tokenize(example['question'])
     if len(query_tokens) > max_query_length:
-      query_tokens = query_tokens[0:max_query_length]
+      query_tokens = query_tokens[0:max_query_length - 2]
 
     tok_to_orig_index = []
     orig_to_tok_index = []
@@ -86,7 +86,7 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
     question_segment_ids = []
     question_tokens.append("[CLS]")
     question_segment_ids.append(0)
-    for idx, token in enumerate(query_tokens[:max_query_length - 2]):
+    for idx, token in enumerate(query_tokens):
       question_tokens.append(token)
       question_segment_ids.append(0)
       question_mask[idx] = 1
@@ -96,8 +96,6 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
     while len(question_ids) < max_query_length:
       question_ids.append(0)
       question_segment_ids.append(0)
-    if len(question_ids) != max_query_length:
-      print("Error")
 
     for (doc_span_index, doc_span) in enumerate(doc_spans):
       tokens = []
@@ -165,7 +163,6 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
             doc_offset = len(query_tokens) + 2
             start_position = tok_start_position - doc_start + doc_offset
             end_position = tok_end_position - doc_start + doc_offset
-
       features.append({'unique_id': unique_id,
                        'example_index': example_index,
                        'doc_span_index': doc_span_index,
@@ -186,6 +183,7 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
   print('features num:', len(features))
   if save_feature:
     json.dump(features, open(output_files[1], 'w'))
+  return features
 
 
 
@@ -199,7 +197,7 @@ def load_data(config, mode="train"):
 
   make_path_legal(feature_path)
   if not os.path.exists(feature_path) or config.re_gen_feature:
-    json2features(data_file,
+    train_features = json2features(data_file,
                   [feature_path.replace('_features_', '_examples_'),
                    feature_path],
                   tokenizer, is_training=is_train,
@@ -211,7 +209,8 @@ def load_data(config, mode="train"):
   #                 tokenizer,
   #                 is_training=False,
   #                 max_seq_length=config.bert_config.max_position_embeddings)
-  train_features = json.load(open(feature_path, 'r'))
+  else:
+    train_features = json.load(open(feature_path, 'r'))
   # dev_examples = json.load(open(config.dev_dir1, 'r'))
   # dev_features = json.load(open(config.dev_dir2, 'r'))
   all_input_ids = torch.tensor([f['input_ids'] for f in train_features],
