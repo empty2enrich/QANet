@@ -16,6 +16,7 @@ class Config(object):
 
     # data preprocess
     self.split_qc = True # 是否把 context token 与 question token 分开
+    self.re_gen_feature = True # True: 表示重新生成 feature 缓存文件
 
     # encoder
     self.use_position_embedding = True
@@ -55,18 +56,18 @@ class Config(object):
 
     # train cfg
     self.learning_rate = 3e-5
-    self.batch_size = 6
+    self.batch_size = 2
     self.beta1 = 0.9
     self.beta2 = 0.999
     self.is_only_save_params = True
     self.mode = "train" # train, debug, valid, test
     self.record_interval_steps = 500
     self.model_save_dir = "../model"
-    self.is_continue_train = True
+    self.is_continue_train = False
     self.continue_checkpoint = 2000
     self.continue_epoch = 0
-    self.start_epoch = 2
-    self.epochs = 3
+    self.start_epoch = 0
+    self.epochs = 2
     self.log_path = "../log/log.txt"
     self.logger = get_logger(self.log_path)
 

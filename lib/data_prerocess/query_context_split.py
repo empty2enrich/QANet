@@ -12,6 +12,7 @@ import torch
 
 from lib.data_prerocess.utils import *
 from lib.tokenization.bert_finetune_tokenization import *
+from my_py_toolkit.file.file_toolkit import make_path_legal
 from torch.utils.data import TensorDataset, DataLoader
 
 def read_train_data(input_file):
@@ -82,7 +83,7 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
     question_tokens = []
     question_mask = [0 for _ in range(max_query_length)]
     question_segment_ids = []
-    tokens.append("[CLS]")
+    question_tokens.append("[CLS]")
     question_segment_ids.append(0)
     for idx, token in enumerate(query_tokens):
       question_tokens.append(token)
@@ -185,7 +186,9 @@ def load_data(config, mode="train"):
   feature_path = cur_cfg.get("feature_path")
   data_file = cur_cfg.get("data_file")
   is_train = cur_cfg.get("is_train")
-  if not os.path.exists(feature_path):
+
+  make_path_legal(feature_path)
+  if not os.path.exists(feature_path) or config.re_gen_feature:
     json2features(data_file,
                   [feature_path.replace('_features_', '_examples_'),
                    feature_path],
@@ -205,6 +208,7 @@ def load_data(config, mode="train"):
                                 dtype=torch.long)
   all_segment_ids = torch.tensor([f['segment_ids'] for f in train_features],
                                  dtype=torch.long)
+
   question_input_ids = torch.tensor([f['question_ids'] for f in train_features],
                                dtype=torch.long)
   question_input_mask = torch.tensor([f['question_mask'] for f in train_features],

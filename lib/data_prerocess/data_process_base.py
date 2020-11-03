@@ -9,6 +9,7 @@ import json
 import os
 import torch
 from lib.tokenization.bert_finetune_tokenization import *
+from my_py_toolkit.file.file_toolkit import make_path_legal
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 
@@ -24,7 +25,8 @@ def load_data(config, mode="train"):
   feature_path = cur_cfg.get("feature_path")
   data_file = cur_cfg.get("data_file")
   is_train = cur_cfg.get("is_train")
-  if not os.path.exists(feature_path):
+  if not os.path.exists(feature_path) or config.re_gen_feature:
+    make_path_legal(feature_path)
     json2features(data_file,
                   [feature_path.replace('_features_', '_examples_'),
                    feature_path],

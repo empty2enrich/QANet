@@ -7,7 +7,7 @@
 
 import json
 import os
-import tqdm
+from tqdm import tqdm
 
 from lib.tokenization.bert_finetune_tokenization import *
 
