@@ -23,7 +23,8 @@ def read_train_data(input_file):
 
 def json2features(input_file, output_files, tokenizer, is_training=False,
                   repeat_limit=3, max_query_length=64,
-                  max_seq_length=512, doc_stride=128):
+                  max_seq_length=512, doc_stride=128,
+                  save_feature=True):
 
   train_data = read_train_data(input_file)
 
@@ -85,13 +86,18 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
     question_segment_ids = []
     question_tokens.append("[CLS]")
     question_segment_ids.append(0)
-    for idx, token in enumerate(query_tokens):
+    for idx, token in enumerate(query_tokens[:max_query_length - 2]):
       question_tokens.append(token)
       question_segment_ids.append(0)
       question_mask[idx] = 1
     question_tokens.append("[SEP]")
     question_segment_ids.append(0)
-
+    question_ids = tokenizer.convert_tokens_to_ids(question_tokens)
+    while len(question_ids) < max_query_length:
+      question_ids.append(0)
+      question_segment_ids.append(0)
+    if len(question_ids) != max_query_length:
+      print("Error")
 
     for (doc_span_index, doc_span) in enumerate(doc_spans):
       tokens = []
@@ -117,8 +123,11 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
       tokens.append("[SEP]")
       segment_ids.append(0)
 
+
+
+
+
       input_ids = tokenizer.convert_tokens_to_ids(tokens)
-      question_ids = tokenizer.convert_tokens_to_ids(question_tokens)
       # The mask has 1 for real tokens and 0 for padding tokens. Only real
       # tokens are attended to.
       input_mask = [1] * len(input_ids)
@@ -175,7 +184,8 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
       unique_id += 1
 
   print('features num:', len(features))
-  json.dump(features, open(output_files[1], 'w'))
+  if save_feature:
+    json.dump(features, open(output_files[1], 'w'))
 
 
 
@@ -193,7 +203,9 @@ def load_data(config, mode="train"):
                   [feature_path.replace('_features_', '_examples_'),
                    feature_path],
                   tokenizer, is_training=is_train,
-                  max_seq_length=config.bert_config.max_position_embeddings)
+                  max_seq_length=config.bert_config.max_position_embeddings,
+                  max_query_length=config.max_query_length,
+                  save_feature=config.save_feature)
   # if not os.path.exists(config.dev_dir1) or not os.path.exists(config.dev_dir2):
   #   json2features(config.dev_file, [config.dev_dir1, config.dev_dir2],
   #                 tokenizer,
