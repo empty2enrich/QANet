@@ -216,7 +216,7 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
   for step, batch in enumerate(train_data):
     try:
       optimizer.zero_grad()
-      batch = tuple([v.to(config.device) if v else v for v in batch])
+      batch = tuple([v.to(config.device) if v is not  None else v for v in batch])
       (input_ids, input_mask, segment_ids,
        question_input_ids, question_input_mask, question_segment_ids,
        start_positions, end_positions) = batch

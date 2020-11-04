@@ -26,6 +26,7 @@ class ModelBaseLine(ModelBase):
     super(ModelBaseLine, self).__init__(config)
     # self.config = config
     # embedding
+    self.bert = load_bert(config.bert_config)
     self.embed_word = Embedding(config)
 
     # encoder
@@ -76,7 +77,7 @@ class ModelBaseLine(ModelBase):
     """
     embedding = self.embed_word(input_ids, segment_ids)
     value_embedding = (self.embed_word(question_ids, question_segment_ids)
-                        if question_ids else embedding)
+                        if question_ids is not None else embedding)
     embedding = self.encoder(embedding, value_embedding, input_mask)
     start, end = self.pointer(embedding, input_mask)
     return start, end

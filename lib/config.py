@@ -16,9 +16,9 @@ class Config(object):
 
     # data preprocess
     self.split_qc = True # 是否把 context token 与 question token 分开
-    self.re_gen_feature = True # True: 表示重新生成 feature 缓存文件
+    self.re_gen_feature = False # True: 表示重新生成 feature 缓存文件
     self.max_query_length = 32
-    self.save_feature = False
+    self.save_feature = True
 
     # encoder
     self.use_position_embedding = True

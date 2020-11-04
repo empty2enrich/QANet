@@ -231,21 +231,32 @@ class AttentionPyramid(torch.nn.Module):
 
 
 class Embedding(torch.nn.Module):
-  def __init__(self, config):
+  """
+  将 token 转为 embeddings.
+  """
+  def __init__(self, length, dim, bert, use_position_embedding=True,
+               use_conv=False, chan_in=None, chan_out=None, kernel=None):
     super(Embedding, self).__init__()
-    self.bert = load_bert(config.bert_config)
-    self.use_position_embedding = config.use_position_embedding
-    self.use_conv = config.use_conv
-    self.layer_normal = torch.nn.LayerNorm([config.bert_config.max_position_embeddings,
-                                  config.bert_config.hidden_size])
+    # self.config = config
+    self.bert = bert
+    self.use_position_embedding = use_position_embedding
+    self.use_conv = use_conv
+    self.layer_normal = torch.nn.LayerNorm([length, dim])
     if self.use_position_embedding:
-      self.init_positon_embedding(config.bert_config.max_position_embeddings,
-                                  config.bert_config.hidden_size)
+      self.init_positon_embedding([length, dim])
 
-    self.conv = DepthwiseSeparableConv(config.chan_in, config.chan_out,
-                                       config.kernel, config.dim)
+    self.conv = DepthwiseSeparableConv(chan_in, chan_out, kernel, dim)
 
   def init_positon_embedding(self, max_postion, pos_dim):
+    """
+    初始化 position embeddings.
+    Args:
+      max_postion:
+      pos_dim:
+
+    Returns:
+
+    """
     posi_embedding = torch.Tensor(max_postion, pos_dim)
     # posi_embedding = torch.nn.init.kaiming_normal(posi_embedding, a=math.sqrt(5), mode='fan_in', nonlinearity='leaky_relu')
     self.position_embedding = torch.nn.Parameter(posi_embedding)
