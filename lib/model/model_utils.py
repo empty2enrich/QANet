@@ -234,18 +234,17 @@ class Embedding(torch.nn.Module):
   """
   将 token 转为 embeddings.
   """
-  def __init__(self, length, dim, bert, use_position_embedding=True,
-               use_conv=False, chan_in=None, chan_out=None, kernel=None):
+  def __init__(self, bert, length, dim, use_position_embedding=True,
+               use_conv=False, chan_in=None, chan_out=None, kernel=3, cnn_dim=2):
     super(Embedding, self).__init__()
-    # self.config = config
     self.bert = bert
     self.use_position_embedding = use_position_embedding
     self.use_conv = use_conv
     self.layer_normal = torch.nn.LayerNorm([length, dim])
     if self.use_position_embedding:
-      self.init_positon_embedding([length, dim])
-
-    self.conv = DepthwiseSeparableConv(chan_in, chan_out, kernel, dim)
+      self.init_positon_embedding(length, dim)
+    if use_conv:
+      self.conv = DepthwiseSeparableConv(chan_in, chan_out, kernel, cnn_dim)
 
   def init_positon_embedding(self, max_postion, pos_dim):
     """

@@ -277,10 +277,16 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
   config.logger.info("Start train =============================")
   for step, batch in enumerate(train_data):
     try:
-      batch = tuple([v.to(config.device) for v in batch])
-      input_ids, input_mask, segment_ids, start_positions, end_positions = batch
+      batch = tuple(
+        [v.to(config.device) if v is not None else v for v in batch])
+      (input_ids, input_mask, segment_ids,
+       question_input_ids, question_input_mask, question_segment_ids,
+       start_positions, end_positions) = batch
       input_mask = input_mask.float()
-      start_embeddings, end_embeddings = model(input_ids, input_mask, segment_ids)
+      start_embeddings, end_embeddings = model(input_ids, input_mask, segment_ids,
+                                               question_input_ids,
+                                               question_input_mask,
+                                               question_segment_ids)
       loss = calculate_loss(end_embeddings, end_positions, log_sofmax,
                             start_embeddings, start_positions)
       losses.append(loss.item())

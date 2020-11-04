@@ -27,7 +27,11 @@ class ModelBaseLine(ModelBase):
     # self.config = config
     # embedding
     self.bert = load_bert(config.bert_config)
-    self.embed_word = Embedding(config)
+    self.embed_context = Embedding(self.bert,
+                                   config.bert_config.max_position_embeddings,
+                                   config.bert_config.hidden_size)
+    self.embed_question = Embedding(self.bert, config.max_query_length,
+                                    config.bert_config.hidden_size)
 
     # encoder
     self.encoder = Encoder(config.encoder_hidden_layer_number,
@@ -75,8 +79,8 @@ class ModelBaseLine(ModelBase):
     Returns:
 
     """
-    embedding = self.embed_word(input_ids, segment_ids)
-    value_embedding = (self.embed_word(question_ids, question_segment_ids)
+    embedding = self.embed_context(input_ids, segment_ids)
+    value_embedding = (self.embed_question(question_ids, question_segment_ids)
                         if question_ids is not None else embedding)
     embedding = self.encoder(embedding, value_embedding, input_mask)
     start, end = self.pointer(embedding, input_mask)
