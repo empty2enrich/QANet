@@ -15,10 +15,12 @@ class Config(object):
     self.dropout = 0.1
 
     # data preprocess
-    self.split_qc = True # 是否把 context token 与 question token 分开
-    self.re_gen_feature = False # True: 表示重新生成 feature 缓存文件
+    # split_qc 是否把 context token 与 question token 分开
+    self.split_qc = True
+    # re_gen_feature True: 表示重新生成 feature 缓存文件
+    self.re_gen_feature = True
     self.max_query_length = 32
-    self.save_feature = True
+    self.save_feature = False
 
     # encoder
     self.use_position_embedding = True

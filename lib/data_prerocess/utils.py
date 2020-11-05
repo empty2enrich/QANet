@@ -273,8 +273,25 @@ def generate_question_feature(question_tokens, max_query_len, tokenizer):
   tokens.append("[SEP]")
   segment_ids.append(0)
 
+def gen_bert_input(max_len, tokenizer, *tokens_list):
+  input_id = []
+  input_token = []
+  input_mask = []
+  segment_ids = []
 
+  input_token.append("[CLS]")
+  input_mask.append(1)
+  segment_ids.append(0)
 
+  for tokens in tokens_list:
+    for token in tokens:
+      if len(input_token) > max_len - 1:
+        break
+      in
+  input_id.append("[SEP]")
+
+  while len(input_id):
+    pass
 # def merge_tokens(*tokens):
 #   tokens_merged = []
 #   segment_ids = []

@@ -215,7 +215,10 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
   config.logger.info("Start train =============================")
   for step, batch in enumerate(train_data):
     try:
-      optimizer.zero_grad()
+      try:
+        optimizer.zero_grad()
+      except Exception:
+        print(traceback.format_exc())
       batch = tuple([v.to(config.device) if v is not  None else v for v in batch])
       (input_ids, input_mask, segment_ids,
        question_input_ids, question_input_mask, question_segment_ids,
@@ -224,8 +227,11 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
       start_embeddings, end_embeddings = model(input_ids, input_mask, segment_ids,
                                                question_input_ids, question_input_mask,
                                                question_segment_ids)
-      loss = calculate_loss(end_embeddings, end_positions, log_sofmax,
-                            start_embeddings, start_positions)
+      try:
+        loss = calculate_loss(end_embeddings, end_positions, log_sofmax,
+                              start_embeddings, start_positions)
+      except Exception:
+        print(traceback.format_exc())
       losses.append(loss.item())
       loss.backward()
 
@@ -235,7 +241,10 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
                                                                       optimizer, softmax,
                                                                       step, tokenizer, mode="train")
       # 参数更新
-      optimizer.step()
+      try:
+        optimizer.step()
+      except Exception:
+        print(traceback.format_exc())
       if scheduler:
         scheduler.step()
       if step % config.record_interval_steps == 0:
@@ -341,8 +350,10 @@ def record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
 
 def calculate_loss(end_embeddings, end_positions, log_sofmax, start_embeddings,
                    start_positions):
+  print(f"start_embeddings shape: {start_embeddings.shape}, + start position: {start_positions}")
   loss_start = F.nll_loss(log_sofmax(start_embeddings), start_positions,
                           reduction="mean")
+  print(f"end_embeddings shape: {end_embeddings.shape}, + end_positions: {end_positions}")
   loss_end = F.nll_loss(log_sofmax(end_embeddings), end_positions,
                         reduction="mean")
   loss = (loss_start + loss_end) / 2

@@ -161,9 +161,12 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
             start_position = 0
             end_position = 0
           else:
-            doc_offset = len(query_tokens) + 2
+            doc_offset = 1
             start_position = tok_start_position - doc_start + doc_offset
             end_position = tok_end_position - doc_start + doc_offset
+
+      assert  -1 < start_position < 512
+      assert  -1 < end_position < 512
 
       if len(question_ids) != max_query_length:
         print("ERROR")
