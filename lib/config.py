@@ -18,21 +18,26 @@ class Config(object):
     # split_qc 是否把 context token 与 question token 分开
     self.split_qc = True
     # re_gen_feature True: 表示重新生成 feature 缓存文件
-    self.re_gen_feature = True
+    self.re_gen_feature = False
     self.max_query_length = 32
-    self.save_feature = False
+    self.save_feature = True
 
     # encoder
     self.use_position_embedding = True
     self.encoder_hidden_layer_number = 11
     self.encoder_intermediate_dim = 3072
     self.encoder_dropout = 0.1
+
     # attention
     self.attention_head_num = 16
     self.attention_droup_out = 0.1
     self.attention_use_bias = False
+    # qc、cq attention
+    self.bi_direction_attention = False
+
     # train
     self.training = True
+
     # cnn
     self.use_conv=False
     self.chan_in = 64
@@ -60,7 +65,7 @@ class Config(object):
 
     # train cfg
     self.learning_rate = 3e-5
-    self.batch_size = 2
+    self.batch_size = 1
     self.beta1 = 0.9
     self.beta2 = 0.999
     self.is_only_save_params = True

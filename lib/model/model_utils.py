@@ -69,18 +69,18 @@ class Attention(torch.nn.Module):
     tensor = tensor.permute(0, 2, 1, 3)
     return tensor
 
-  def forward(self, query_tensor, value_tensor, attention_mask=None):
+  def forward(self, query_tensor, value_tensor, value_attention_mask=None):
     """
     输出的 length 与 query_tensor  length 保持一致。
     Args:
       query_tensor:
       value_tensor:
-      attention_mask:
+      value_attention_mask:
 
     Returns:
 
     """
-    batch_size, quert_length, _ = query_tensor.shape
+    batch_size, query_length, _ = query_tensor.shape
     _, value_length, _ = value_tensor.shape
 
     query_tensor = reshape_tensor(query_tensor, (-1, self.dim))
@@ -89,7 +89,7 @@ class Attention(torch.nn.Module):
     key_tensor = self.key_layer(value_tensor)
     value_tensor = self.value_layer(value_tensor)
 
-    query_tensor = self.transpose4score(query_tensor, (batch_size, quert_length,
+    query_tensor = self.transpose4score(query_tensor, (batch_size, query_length,
                                                        self.attention_head_num,
                                                        self.size_per_head))
     key_tensor = self.transpose4score(key_tensor, (batch_size, value_length,
@@ -99,14 +99,14 @@ class Attention(torch.nn.Module):
     # batch_size, attention_head_num, query_length, value_length
     attention_scores = attention_scores / math.sqrt(float(self.size_per_head))
 
-    if attention_mask is not None:
+    if value_attention_mask is not None:
       # batch_size, 1, sqe_len
-      attention_mask = torch.unsqueeze(attention_mask, 1)
+      value_attention_mask = torch.unsqueeze(value_attention_mask, 1)
       # batch_size, 1, sqe_len, 1
-      attention_mask = torch.unsqueeze(attention_mask, -1)
+      value_attention_mask = torch.unsqueeze(value_attention_mask, -1)
       # batch_size, attention_head_num, squ_len
-      attention_mask = attention_mask.expand(batch_size, self.attention_head_num, quert_length, value_length)
-      attention_scores = attention_scores * attention_mask
+      value_attention_mask = value_attention_mask.expand(batch_size, self.attention_head_num, query_length, value_length)
+      attention_scores = attention_scores * value_attention_mask
 
     attention_scores = self.softmax(attention_scores)
     # attention_scores = self.dropout(attention_scores)
@@ -122,7 +122,7 @@ class Attention(torch.nn.Module):
     # attention = torch.matmul(attention_mask, value_tensor)
 
     attention = attention.permute(0, 2, 1, 3)
-    attention = reshape_tensor(attention, (batch_size, quert_length, self.dim))
+    attention = reshape_tensor(attention, (batch_size, query_length, self.dim))
 
     return attention
 
@@ -280,39 +280,70 @@ class Encoder(torch.nn.Module):
   对词向量进行编码
   """
 
-  def __init__(self, encoder_layer_num, dim, max_position, intermediate_dim,
-               attention_head_num,
-               attention_pro_drop, attention_use_bias=False):
+  def __init__(self, encoder_layer_num, dim, max_context_position, intermediate_dim, attention_head_num,
+               attention_pro_drop, attention_use_bias=False, bi_direction_attention=False, max_query_position=32):
     super(Encoder, self).__init__()
     self.layer_num = encoder_layer_num
-    self.attention_layer = torch.nn.ModuleList([
+    self.bi_direction_attention = bi_direction_attention
+    # attention: query -> context
+    self.attention_layer_qc = torch.nn.ModuleList([
       Attention(dim, attention_head_num, attention_pro_drop, attention_use_bias)
       for i in range(encoder_layer_num)
     ])
-    self.linear_1 = torch.nn.ModuleList([
+    # attention: context -> question
+    self.attention_layer_ = torch.nn.ModuleList([
+      Attention(dim, attention_head_num, attention_pro_drop, attention_use_bias)
+      for i in range(encoder_layer_num)
+    ])
+    self.linear_1_qc = torch.nn.ModuleList([
       torch.nn.Linear(dim, dim) for i in range(encoder_layer_num)
     ])
-    self.linear_2 = torch.nn.ModuleList([
+    self.linear_1_cq = torch.nn.ModuleList([
+      torch.nn.Linear(dim, dim) for i in range(encoder_layer_num)
+    ])
+    self.linear_2_qc = torch.nn.ModuleList([
       torch.nn.Linear(dim, intermediate_dim) for i in range(encoder_layer_num)
     ])
-    self.linear_3 = torch.nn.ModuleList([
+    self.linear_2_cq = torch.nn.ModuleList([
+      torch.nn.Linear(dim, intermediate_dim) for i in range(encoder_layer_num)
+    ])
+    self.linear_3_qc = torch.nn.ModuleList([
       torch.nn.Linear(intermediate_dim, dim) for i in range(encoder_layer_num)
     ])
-    self.normal = torch.nn.ModuleList([
-      torch.nn.LayerNorm([max_position, dim]) for _ in range(encoder_layer_num)
+    self.linear_3_cq = torch.nn.ModuleList([
+      torch.nn.Linear(intermediate_dim, dim) for i in range(encoder_layer_num)
+    ])
+    self.normal_qc = torch.nn.ModuleList([
+      torch.nn.LayerNorm([max_query_position, dim]) for _ in range(encoder_layer_num)
+    ])
+    self.normal_cq = torch.nn.ModuleList([
+      torch.nn.LayerNorm([max_context_position, dim]) for _ in range(encoder_layer_num)
     ])
 
-  def forward(self, embeddings, other_embeddings, input_mask):
-    pre_embedding = embeddings
+  def forward(self, query_embeddings, context_embeddings, query_mask, context_mask=None):
+    pre_embedding = query_embeddings
+    pre_context_embeddings = context_embeddings
     for index in range(self.layer_num):
-      embeddings = self.attention_layer[index](embeddings, other_embeddings, input_mask)
-      embeddings = torch.relu(self.linear_1[index](embeddings))
-      embeddings = torch.relu(self.linear_2[index](embeddings))
-      embeddings = torch.relu(self.linear_3[index](embeddings))
-      embeddings += pre_embedding
-      embeddings = self.normal[index](embeddings)
-      pre_embedding = embeddings
-    return embeddings
+      # query attention
+      query_embeddings = self.attention_layer_qc[index](query_embeddings, context_embeddings, query_mask)
+      query_embeddings = torch.relu(self.linear_1_qc[index](query_embeddings))
+      query_embeddings = torch.relu(self.linear_2_qc[index](query_embeddings))
+      query_embeddings = torch.relu(self.linear_3_qc[index](query_embeddings))
+      query_embeddings += pre_embedding
+      query_embeddings = self.normal_qc[index](query_embeddings)
+
+      # context attention
+      if self.bi_direction_attention:
+        context_embeddings =  self.attention_layer_cq[index](context_embeddings, pre_embedding, context_mask)
+        context_embeddings = torch.relu(self.linear_1_cq[index](context_embeddings))
+        context_embeddings = torch.relu(self.linear_2_cq[index](context_embeddings))
+        context_embeddings = torch.relu(self.linear_3_cq[index](context_embeddings))
+        context_embeddings += pre_context_embeddings
+        context_embeddings = self.normal_cq(context_embeddings)
+
+      pre_embedding = query_embeddings
+      pre_context_embeddings = context_embeddings
+    return query_embeddings
 
 
 ################################################################################

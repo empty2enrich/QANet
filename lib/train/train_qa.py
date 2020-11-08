@@ -224,6 +224,7 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
        question_input_ids, question_input_mask, question_segment_ids,
        start_positions, end_positions) = batch
       input_mask = input_mask.float()
+      question_input_mask = question_input_mask.float()
       start_embeddings, end_embeddings = model(input_ids, input_mask, segment_ids,
                                                question_input_ids, question_input_mask,
                                                question_segment_ids)
@@ -292,6 +293,7 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
        question_input_ids, question_input_mask, question_segment_ids,
        start_positions, end_positions) = batch
       input_mask = input_mask.float()
+      question_input_mask = question_input_mask.float()
       start_embeddings, end_embeddings = model(input_ids, input_mask, segment_ids,
                                                question_input_ids,
                                                question_input_mask,
