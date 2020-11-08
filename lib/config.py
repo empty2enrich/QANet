@@ -33,7 +33,7 @@ class Config(object):
     self.attention_droup_out = 0.1
     self.attention_use_bias = False
     # qc、cq attention
-    self.bi_direction_attention = False
+    self.bi_direction_attention = True
     # cq: context -> question; qc: question -> context
     self.direction = "cq"
 
