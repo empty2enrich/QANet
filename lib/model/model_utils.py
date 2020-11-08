@@ -281,17 +281,19 @@ class Encoder(torch.nn.Module):
   """
 
   def __init__(self, encoder_layer_num, dim, max_context_position, intermediate_dim, attention_head_num,
-               attention_pro_drop, attention_use_bias=False, bi_direction_attention=False, max_query_position=32):
+               attention_pro_drop, attention_use_bias=False, bi_direction_attention=False, max_query_position=32,
+               attention_direction="qc"):
     super(Encoder, self).__init__()
     self.layer_num = encoder_layer_num
     self.bi_direction_attention = bi_direction_attention
+    self.attention_direction = attention_direction
     # attention: query -> context
     self.attention_layer_qc = torch.nn.ModuleList([
       Attention(dim, attention_head_num, attention_pro_drop, attention_use_bias)
       for i in range(encoder_layer_num)
     ])
     # attention: context -> question
-    self.attention_layer_ = torch.nn.ModuleList([
+    self.attention_layer_cq = torch.nn.ModuleList([
       Attention(dim, attention_head_num, attention_pro_drop, attention_use_bias)
       for i in range(encoder_layer_num)
     ])
@@ -320,30 +322,72 @@ class Encoder(torch.nn.Module):
       torch.nn.LayerNorm([max_context_position, dim]) for _ in range(encoder_layer_num)
     ])
 
+  def encode_qc(self, query_embeddings, context_embeddings, query_mask, layer_num, pre_query_embedding):
+    """
+    query -> context attention encode。
+    Args:
+      query_embeddings:
+      context_embeddings:
+      query_mask:
+      context_mask:
+      layer_num:
+      pre_query_embedding:
+
+    Returns:
+
+    """
+    query_embeddings = self.attention_layer_qc[layer_num](query_embeddings, context_embeddings, query_mask)
+    query_embeddings = torch.relu(self.linear_1_qc[layer_num](query_embeddings))
+    query_embeddings = torch.relu(self.linear_2_qc[layer_num](query_embeddings))
+    query_embeddings = torch.relu(self.linear_3_qc[layer_num](query_embeddings))
+    query_embeddings += pre_query_embedding
+    query_embeddings = self.normal_qc[layer_num](query_embeddings)
+    return query_embeddings
+
+  def encode_cq(self, query_embeddings, context_embeddings, context_mask, layer_num, pre_context_embedding):
+    """
+    context -> query attention encode。
+    Args:
+      query_embeddings:
+      context_embeddings:
+      query_mask:
+      context_mask:
+      layer_num:
+      pre_context_embedding:
+
+    Returns:
+
+    """
+    context_embeddings = self.attention_layer_cq[layer_num](context_embeddings, query_embeddings, context_mask)
+    context_embeddings = torch.relu(self.linear_1_cq[layer_num](context_embeddings))
+    context_embeddings = torch.relu(self.linear_2_cq[layer_num](context_embeddings))
+    context_embeddings = torch.relu(self.linear_3_cq[layer_num](context_embeddings))
+    context_embeddings += pre_context_embedding
+    context_embeddings = self.normal_cq[layer_num](context_embeddings)
+    return context_embeddings
+
   def forward(self, query_embeddings, context_embeddings, query_mask, context_mask=None):
     pre_embedding = query_embeddings
     pre_context_embeddings = context_embeddings
     for index in range(self.layer_num):
       # query attention
-      query_embeddings = self.attention_layer_qc[index](query_embeddings, context_embeddings, query_mask)
-      query_embeddings = torch.relu(self.linear_1_qc[index](query_embeddings))
-      query_embeddings = torch.relu(self.linear_2_qc[index](query_embeddings))
-      query_embeddings = torch.relu(self.linear_3_qc[index](query_embeddings))
-      query_embeddings += pre_embedding
-      query_embeddings = self.normal_qc[index](query_embeddings)
-
-      # context attention
-      if self.bi_direction_attention:
-        context_embeddings =  self.attention_layer_cq[index](context_embeddings, pre_embedding, context_mask)
-        context_embeddings = torch.relu(self.linear_1_cq[index](context_embeddings))
-        context_embeddings = torch.relu(self.linear_2_cq[index](context_embeddings))
-        context_embeddings = torch.relu(self.linear_3_cq[index](context_embeddings))
-        context_embeddings += pre_context_embeddings
-        context_embeddings = self.normal_cq(context_embeddings)
+      if self.attention_direction == "qc":
+        query_embeddings = self.encode_qc(query_embeddings, context_embeddings, query_mask, index, pre_embedding)
+        # context attention
+        if self.bi_direction_attention:
+          context_embeddings = self.encode_cq(query_embeddings, context_embeddings, context_mask, index, pre_context_embeddings)
+      elif self.attention_direction == "cq":
+        context_embeddings = self.encode_cq(query_embeddings, context_embeddings, context_mask, index,
+                                            pre_context_embeddings)
+        if self.bi_direction_attention:
+          query_embeddings = self.encode_qc(query_embeddings, context_embeddings, query_mask, index, pre_embedding)
 
       pre_embedding = query_embeddings
       pre_context_embeddings = context_embeddings
-    return query_embeddings
+    if self.attention_direction == "qc":
+      return query_embeddings
+    else:
+      return context_embeddings
 
 
 ################################################################################

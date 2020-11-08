@@ -34,6 +34,8 @@ class Config(object):
     self.attention_use_bias = False
     # qc、cq attention
     self.bi_direction_attention = False
+    # cq: context -> question; qc: question -> context
+    self.direction = "cq"
 
     # train
     self.training = True

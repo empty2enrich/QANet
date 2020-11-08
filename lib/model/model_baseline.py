@@ -35,6 +35,7 @@ class ModelBaseLine(ModelBase):
                                     config.bert_config.hidden_size)
 
     # encoder
+    self.attention_direction = config.direction
     self.encoder = Encoder(config.encoder_hidden_layer_number,
                            config.bert_config.hidden_size,
                            config.bert_config.max_position_embeddings,
@@ -43,7 +44,8 @@ class ModelBaseLine(ModelBase):
                            config.attention_droup_out,
                            config.attention_use_bias,
                            bi_direction_attention=config.bi_direction_attention,
-                           max_query_position=config.max_query_length
+                           max_query_position=config.max_query_length,
+                           attention_direction=config.direction
                            )
 
     # pointer
@@ -95,12 +97,19 @@ class ModelBaseLine(ModelBase):
     Returns:
 
     """
-    embedding = self.embed_context(input_ids, segment_ids)
+    input_embedding = self.embed_context(input_ids, segment_ids)
     query_embedding = (self.embed_question(query_ids, query_segment_ids)
-                        if query_ids is not None else embedding)
-    embedding = self.encoder(query_embedding, embedding, query_mask, input_mask)
-    if self.config.bi_direction_attention:
-      start, end = self.pointer(embedding, input_mask)
+                        if query_ids is not None else input_embedding)
+    if self.attention_direction == "qc":
+      embedding = self.encoder(query_embedding, input_embedding, query_mask, input_mask)
+      start, end = self.query_pointer(embedding, query_mask)
     else:
-      start, end = self.query_pointer(embedding, input_mask)
+      embedding = self.encoder(query_embedding, input_embedding, query_mask, input_mask)
+      # embedding = self.encoder(input_embedding, query_embedding, input_mask, query_mask)
+      start, end = self.pointer(embedding, input_mask)
+
+    # if self.config.bi_direction_attention:
+    #   start, end = self.pointer(embedding, input_mask)
+    # else:
+    #   start, end = self.query_pointer(embedding, input_mask)
     return start, end
