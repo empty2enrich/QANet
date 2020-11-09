@@ -1,0 +1,2 @@
+pytorch_transformers == requirements
+tensorboardX == 2.1

@@ -12,12 +12,13 @@ import traceback
 from lib.config import Config
 from lib.model.model_baseline import ModelBaseLine
 from lib.model.model_macth_pyramid import ModelMatchPyramid
+from lib.model.model_use_cls import ModelCLS
 from lib.train.train_qa import train_qa, eval_qa
 from my_py_toolkit.torch.utils import load_model, get_adam_optimizer
 from tqdm import tqdm
 
 def main(config):
-  model = load_model(ModelBaseLine, config)
+  model = load_model(ModelCLS, config)
   print(model)
   optimizer = get_adam_optimizer(model, config)
   for epoch in tqdm(range(config.start_epoch, config.epochs),
