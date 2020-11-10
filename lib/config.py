@@ -67,7 +67,7 @@ class Config(object):
 
     # train cfg
     self.learning_rate = 3e-5
-    self.batch_size = 1
+    self.batch_size = 4
     self.beta1 = 0.9
     self.beta2 = 0.999
     self.is_only_save_params = True

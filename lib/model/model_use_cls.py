@@ -8,7 +8,7 @@ import torch
 
 from lib.model.model_base import ModelBase
 from lib.model.model_utils import Embedding
-from lib.utils import load_bert
+from lib.utils import load_bert, mask
 
 class ModelCLS(ModelBase):
 
@@ -20,16 +20,19 @@ class ModelCLS(ModelBase):
                                    config.bert_config.hidden_size)
     self.embed_question = Embedding(self.bert, config.max_query_length,
                                     config.bert_config.hidden_size)
-    self.pointer = torch.nn.Linear(self.config.bert_config.hidden_size * 2, 2)
+    self.start_pointer = torch.nn.Linear(self.config.bert_config.hidden_size * 2,
+                                   self.config.bert_config.max_position_embeddings)
+    self.end_pointer = torch.nn.Linear(self.config.bert_config.hidden_size * 2,
+                                   self.config.bert_config.max_position_embeddings)
 
 
   def forward(self, context_idx, context_mask, context_segements,
               query_ids, query_mask, query_segements):
     query_emb = self.embed_question(query_ids, query_segements)
     context_emb = self.embed_context(context_idx, context_segements)
-    embedding = torch.cat((query_emb[:, 0], context_emb[:, 0]), dim=2)
-    embedding = self.pointer(embedding)
-    embedding.squeeze(1)
-    start_embeddings = embedding[:, 0]
-    end_embeddings = embedding[:, 1]
-    return start_embeddings, end_embeddings
+    embedding = torch.cat((query_emb[:, 0], context_emb[:, 0]), dim=1)
+    start_embedding = self.start_pointer(embedding)
+    end_embeddings = self.end_pointer(embedding)
+    start_embedding = mask(start_embedding, context_mask, -1)
+    end_embeddings = mask(end_embeddings, context_mask, -1)
+    return start_embedding, end_embeddings
