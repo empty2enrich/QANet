@@ -13,7 +13,7 @@ from lib.model.model_base import ModelBase
 from lib.model.model_utils import DepthwiseSeparableConv, Attention, Encoder, Embedding
 
 
-class ModelBaseLine(ModelBase):
+class ModelBaseLineSQC(ModelBase):
   """
   The model of baseline.
   """
@@ -24,7 +24,7 @@ class ModelBaseLine(ModelBase):
     Args:
       config(Config):
     """
-    super(ModelBaseLine, self).__init__(config)
+    super(ModelBaseLineSQC, self).__init__(config)
     # self.config = config
     # embedding
     self.bert = load_bert(config.bert_config)
@@ -81,8 +81,35 @@ class ModelBaseLine(ModelBase):
     # start, end, pro = find_max_proper_batch(start_softmax, end_softmax)
     # return start, end, pro
 
-  def forward(self, input_ids, input_mask, segment_ids):
-    embedding = self.embed_word(input_ids, segment_ids)
-    embedding = self.encoder(embedding, input_mask)
-    start, end = self.pointer(embedding, input_mask)
+  def forward(self, input_ids, input_mask, segment_ids,
+              query_ids=None, query_mask=None, query_segment_ids=None):
+    """
+
+    Args:
+      input_ids:
+      input_mask:
+      segment_ids:
+      query_ids(): 默认 None， None： 表示 question token 与 context token
+        都在 input_ids 中，否则 input_ids 只有 context token。
+      query_mask:
+      query_segment_ids:
+
+    Returns:
+
+    """
+    input_embedding = self.embed_context(input_ids, segment_ids)
+    query_embedding = (self.embed_question(query_ids, query_segment_ids)
+                        if query_ids is not None else input_embedding)
+    if self.attention_direction == "qc":
+      embedding = self.encoder(query_embedding, input_embedding, query_mask, input_mask)
+      start, end = self.query_pointer(embedding, query_mask)
+    else:
+      embedding = self.encoder(query_embedding, input_embedding, query_mask, input_mask)
+      # embedding = self.encoder(input_embedding, query_embedding, input_mask, query_mask)
+      start, end = self.pointer(embedding, input_mask)
+
+    # if self.config.bi_direction_attention:
+    #   start, end = self.pointer(embedding, input_mask)
+    # else:
+    #   start, end = self.query_pointer(embedding, input_mask)
     return start, end
