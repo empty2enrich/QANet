@@ -7,11 +7,10 @@
 
 import torch
 
-from lib.utils import BertConfig, load_bert, mask, reshape_tensor
+from lib.utils import BertConfig, load_bert, mask
 from lib.config import Config
 from lib.model.model_base import ModelBase
 from lib.model.model_utils import DepthwiseSeparableConv, Attention, Encoder, Embedding
-
 
 class ModelBaseLine(ModelBase):
   """
@@ -28,29 +27,21 @@ class ModelBaseLine(ModelBase):
     # self.config = config
     # embedding
     self.bert = load_bert(config.bert_config)
-    self.embed_context = Embedding(self.bert,
+    self.embed_word = Embedding(self.bert,
                                    config.bert_config.max_position_embeddings,
                                    config.bert_config.hidden_size)
-    self.embed_question = Embedding(self.bert, config.max_query_length,
-                                    config.bert_config.hidden_size)
 
     # encoder
-    self.attention_direction = config.direction
     self.encoder = Encoder(config.encoder_hidden_layer_number,
                            config.bert_config.hidden_size,
                            config.bert_config.max_position_embeddings,
                            config.encoder_intermediate_dim,
                            config.attention_head_num,
                            config.attention_droup_out,
-                           config.attention_use_bias,
-                           bi_direction_attention=config.bi_direction_attention,
-                           max_query_position=config.max_query_length,
-                           attention_direction=config.direction
-                           )
+                           config.attention_use_bias)
 
     # pointer
     self.pointer_linear = torch.nn.Linear(config.bert_config.hidden_size, 2)
-    self.query_pointor_linear = torch.nn.Linear(config.bert_config.hidden_size, int(512 * 2 / config.max_query_length))
     # self.pointer_softmax = torch.nn.Softmax(dim=-2)
 
 
@@ -59,17 +50,6 @@ class ModelBaseLine(ModelBase):
     """"""
     # size: batch_size, seq_length, 2
     embeddings = self.pointer_linear(embeddings)
-    embeddings = mask(embeddings, input_mask, -2)
-    start_embeddings = embeddings[:, :, 0].squeeze(dim=-1)
-    end_embeddings = embeddings[:, :, 1].squeeze(dim=-1)
-    return start_embeddings, end_embeddings
-
-  def query_pointer(self, embeddings, input_mask):
-    """"""
-    # size: batch_size, seq_length, 2
-    batch_size, len, dim = embeddings.shape
-    embeddings = self.query_pointor_linear(embeddings)
-    embeddings = reshape_tensor(embeddings, (batch_size, 512, 2))
     embeddings = mask(embeddings, input_mask, -2)
     start_embeddings = embeddings[:, :, 0].squeeze(dim=-1)
     end_embeddings = embeddings[:, :, 1].squeeze(dim=-1)

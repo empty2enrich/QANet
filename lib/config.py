@@ -48,6 +48,12 @@ class Config(object):
     self.dim = 2
     self.stride = 2
 
+    # LSTM
+    self.use_lstm = True
+    self.lstm_hidden_size = 768
+    self.lstm_bi_direction = True
+    self.lstm_layer_num = 1
+
     # attention match pyramid
     self.pyramid_chan = 64
     self.pyramid_kernel = 3
