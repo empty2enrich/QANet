@@ -47,6 +47,8 @@ class ModelBaseLine(ModelBase):
                              bidirectional=config.lstm_bi_direction)
     self.rnn_linear = torch.nn.Linear(self.config.lstm_hidden_size * (2 if self.config.lstm_bi_direction else 1),
                                       self.config.bert_config.hidden_size)
+    self.rnn_noraml = torch.nn.LayerNorm((self.config.bert_config.max_position_embeddings,
+                                          self.config.bert_config.hidden_size))
 
 
 
@@ -86,6 +88,8 @@ class ModelBaseLine(ModelBase):
     if self.config.use_lstm:
       embedding, _ = self.rnn(embedding.permute(1, 0, 2), self.init_h0_c0())
       embedding = torch.relu(self.rnn_linear(embedding.permute(1, 0, 2)))
-    embedding = self.encoder(embedding, input_mask)
+      embedding = self.rnn_noraml(embedding)
+    if self.config.use_encoder:
+      embedding = self.encoder(embedding, input_mask)
     start, end = self.pointer(embedding, input_mask)
     return start, end
