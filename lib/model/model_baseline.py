@@ -40,11 +40,31 @@ class ModelBaseLine(ModelBase):
                            config.attention_droup_out,
                            config.attention_use_bias)
 
+    self.rnn = torch.nn.LSTM(config.bert_config.hidden_size,
+                             config.lstm_hidden_size,
+                             num_layers=config.lstm_layer_num,
+                             batch_first=config.lstm_batch_first,
+                             bidirectional=config.lstm_bi_direction)
+    self.rnn_linear = torch.nn.Linear(self.config.lstm_hidden_size * (2 if self.config.lstm_bi_direction else 1),
+                                      self.config.bert_config.hidden_size)
+
+
+
     # pointer
     self.pointer_linear = torch.nn.Linear(config.bert_config.hidden_size, 2)
     # self.pointer_softmax = torch.nn.Softmax(dim=-2)
 
-
+  def init_h0_c0(self):
+    """"""
+    h0 = torch.Tensor(self.config.lstm_layer_num * (2 if self.config.lstm_bi_direction else 1),
+                      self.config.batch_size,
+                      self.config.bert_config.hidden_size)
+    c0 = torch.Tensor(self.config.lstm_layer_num * (2 if self.config.lstm_bi_direction else 1),
+                      self.config.batch_size,
+                      self.config.bert_config.hidden_size)
+    h0 = torch.nn.init.kaiming_normal_(h0).to(self.config.device)
+    c0 = torch.nn.init.kaiming_normal_(c0).to(self.config.device)
+    return h0, c0
 
   def pointer(self, embeddings, input_mask):
     """"""
@@ -63,6 +83,9 @@ class ModelBaseLine(ModelBase):
 
   def forward(self, input_ids, input_mask, segment_ids):
     embedding = self.embed_word(input_ids, segment_ids)
+    if self.config.use_lstm:
+      embedding, _ = self.rnn(embedding.permute(1, 0, 2), self.init_h0_c0())
+      embedding = torch.relu(self.rnn_linear(embedding.permute(1, 0, 2)))
     embedding = self.encoder(embedding, input_mask)
     start, end = self.pointer(embedding, input_mask)
     return start, end

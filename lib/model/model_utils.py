@@ -280,10 +280,49 @@ class Encoder(torch.nn.Module):
   对词向量进行编码
   """
 
+  def __init__(self, encoder_layer_num, dim, max_position, intermediate_dim, attention_head_num,
+               attention_pro_drop, attention_use_bias=False):
+    super(Encoder, self).__init__()
+    self.layer_num = encoder_layer_num
+    self.attention_layer = torch.nn.ModuleList([
+      Attention(dim, attention_head_num, attention_pro_drop, attention_use_bias)
+      for i in range(encoder_layer_num)
+    ])
+    self.linear_1 = torch.nn.ModuleList([
+      torch.nn.Linear(dim, dim) for i in range(encoder_layer_num)
+    ])
+    self.linear_2 = torch.nn.ModuleList([
+      torch.nn.Linear(dim, intermediate_dim) for i in range(encoder_layer_num)
+    ])
+    self.linear_3 = torch.nn.ModuleList([
+      torch.nn.Linear(intermediate_dim, dim) for i in range(encoder_layer_num)
+    ])
+    self.normal = torch.nn.ModuleList([
+      torch.nn.LayerNorm([max_position, dim]) for _ in range(encoder_layer_num)
+    ])
+
+  def forward(self, embeddings, input_mask):
+    pre_embedding = embeddings
+    for index in range(self.layer_num):
+      embeddings = self.attention_layer[index](embeddings, embeddings, input_mask)
+      embeddings = torch.relu(self.linear_1[index](embeddings))
+      embeddings = torch.relu(self.linear_2[index](embeddings))
+      embeddings = torch.relu(self.linear_3[index](embeddings))
+      embeddings += pre_embedding
+      embeddings = self.normal[index](embeddings)
+      pre_embedding = embeddings
+    return embeddings
+
+
+class EncoderSQC(torch.nn.Module):
+  """
+  对词向量进行编码, question、context token 分开。
+  """
+
   def __init__(self, encoder_layer_num, dim, max_context_position, intermediate_dim, attention_head_num,
                attention_pro_drop, attention_use_bias=False, bi_direction_attention=False, max_query_position=32,
                attention_direction="qc"):
-    super(Encoder, self).__init__()
+    super(EncoderSQC, self).__init__()
     self.layer_num = encoder_layer_num
     self.bi_direction_attention = bi_direction_attention
     self.attention_direction = attention_direction
