@@ -36,17 +36,17 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
   unique_id = 1000000000
   for (example_index, example) in enumerate(tqdm(examples)):
     query_tokens = tokenizer.tokenize(example['question'])
-    query_ids, query_segment_ids, query_mask = gen_bert_input(max_query_length, tokenizer, query_tokens)
+    # query_ids, query_segment_ids, query_mask = gen_bert_input(max_query_length, tokenizer, query_tokens)
     all_doc_tokens, orig_to_tok_index, tok_to_orig_index = tokenize(example['doc_tokens'], tokenizer)
 
     tok_end_position, tok_start_position = get_answer_scope(all_doc_tokens, example, is_training, orig_to_tok_index,
                                                             tokenizer)
 
-    doc_spans = scope_truncate_context(all_doc_tokens, doc_stride, max_seq_length - 2)
+    doc_spans = scope_truncate_context(all_doc_tokens, doc_stride, max_seq_length - len(query_tokens) - 3)
 
     for (doc_span_index, doc_span) in enumerate(doc_spans):
-      feature = gen_feature_sqc(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_index, is_training,
-                  max_seq_length, query_ids, query_mask, query_segment_ids, query_tokens,
+      feature = gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_index, is_training,
+                  max_seq_length, query_tokens,
                   tok_end_position, tok_start_position, tok_to_orig_index, tokenizer, unique_id)
       features.append(feature)
       unique_id += 1
@@ -92,20 +92,15 @@ def load_data(config, mode="train"):
   all_segment_ids = torch.tensor([f['segment_ids'] for f in train_features],
                                  dtype=torch.long)
 
-  question_input_ids = torch.tensor([f['question_ids'] for f in train_features],
+  answer = torch.tensor([f['answer'] for f in train_features],
                                dtype=torch.long)
-  question_input_mask = torch.tensor([f['question_mask'] for f in train_features],
-                                dtype=torch.long)
-  question_segment_ids = torch.tensor([f['question_segment_ids'] for f in train_features],
-                                 dtype=torch.long)
   # true label
   all_start_positions = torch.tensor(
     [f['start_position'] for f in train_features], dtype=torch.long)
   all_end_positions = torch.tensor([f['end_position'] for f in train_features],
                                    dtype=torch.long)
   train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
-                             question_input_ids, question_input_mask, question_segment_ids,
-                             all_start_positions, all_end_positions)
+                             all_start_positions, all_end_positions, answer)
   train_dataloader = DataLoader(train_data, batch_size=config.batch_size,
                                 shuffle=True)
   return tokenizer, train_dataloader
