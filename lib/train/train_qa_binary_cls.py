@@ -116,6 +116,27 @@ def find_max_proper_batch(start_softmax, end_softmax):
   return start_index, end_index, max_pro
 
 
+def convert_pre_res_binary_cls(input_ids, pre_ids, ori_start, ori_end, tokenizer):
+  """"""
+  result = []
+  for input, cur_pre_ids, o_start, o_end in zip(input_ids, pre_ids, ori_start, ori_end):
+    tokens = tokenizer.convert_ids_to_tokens(input.tolist())
+    question = "".join(tokens[:tokens.index("[SEP]")])
+    context = "".join(tokens[tokens.index("[SEP]"):])
+    label_answer = "".join(
+      tokens[o_start:o_end + 1])
+    predict_answer = "".join([tokens[i] for i in cur_pre_ids ])
+    cur_res = {
+      "context": context,
+      "question": question,
+      "label_answer": label_answer,
+      "predict_answer": predict_answer,
+      "is_correct": label_answer == predict_answer,
+    }
+    result.append(cur_res)
+
+  return result
+
 def convert_pre_res(input_ids, pre_start, pre_end, ori_start, ori_end, probabilities, tokenizer):
   """"""
   result = []
@@ -275,13 +296,12 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
       batch = tuple([v.to(config.device) for v in batch])
       input_ids, input_mask, segment_ids, start_positions, end_positions, answer = batch
       input_mask = input_mask.float()
-      start_embeddings, end_embeddings = model(input_ids, input_mask, segment_ids)
-      loss = calculate_loss_binary_cls(end_embeddings, end_positions, log_sofmax,
-                            start_embeddings, start_positions)
+      model_output = model(input_ids, input_mask, segment_ids)
+      loss = calculate_loss_binary_cls(model_output, answer, log_sofmax)
       losses.append(loss.item())
       #
-      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
-                                                                      end_embeddings, end_positions, epoch,
+      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, model_output, start_positions,
+                                                                      end_positions, epoch,
                                                                       exact_match_total, f1_total, input_ids, loss, model,
                                                                       optimizer, softmax,
                                                                       step, tokenizer, mode)
@@ -300,6 +320,20 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
     f"f1_total {f1_total} extract_match {exact_match_total/((step + 1)* config.batch_size)} "
     f"f1 {f1_total / ((step + 1)* config.batch_size)}\n")
 
+def find_answer(model_output, softmax):
+  """
+  找到 answer。
+  Args:
+    model_output:
+    softmax:
+
+  Returns:
+
+  """
+  model_output = softmax(model_output)
+  return model_output.max(-1)
+
+
 def record_train_info_calculate_f1_em_bi_cls(config, model_output, answer,
                                              input_ids, epoch, exact_match_total,
                                              f1_total, loss, model, optimizer, softmax,
@@ -307,15 +341,16 @@ def record_train_info_calculate_f1_em_bi_cls(config, model_output, answer,
   """"""
 
 
-def record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
-                                      end_embeddings, end_positions, epoch,
+def record_train_info_calculate_f1_em(config, model_output, start_positions,
+                                      end_positions, epoch,
                                       exact_match_total, f1_total, input_ids, loss, model,
                                       optimizer, softmax,
                                       step, tokenizer, mode="train"):
-  pre_start, pre_end, probabilities = find_max_proper_batch(
-    softmax(start_embeddings), softmax(end_embeddings))
-  cur_res = convert_pre_res(input_ids, pre_start, pre_end, start_positions,
-                            end_positions, probabilities, tokenizer)
+  # pre_start, pre_end, probabilities = find_max_proper_batch(
+  #   softmax(start_embeddings), softmax(end_embeddings))
+  model_output = find_answer(model_output, softmax)
+  cur_res = convert_pre_res_binary_cls(input_ids, model_output, start_positions,
+                            end_positions, tokenizer)
   exact_match_total, f1_total, exact_match, f1 = evaluate_valid_result(
     cur_res, exact_match_total, f1_total, (step + 1) * config.batch_size)
   record_info(valid_result=cur_res, epoch=epoch, is_continue=True, r_type=mode)

@@ -13,7 +13,8 @@ from lib.config import Config
 from lib.model.model_baseline import ModelBaseLine
 # from lib.model.model_macth_pyramid import ModelMatchPyramid
 # from lib.model.model_use_cls import ModelCLS
-from lib.train.train_qa import train_qa, eval_qa
+# from lib.train.train_qa import train_qa, eval_qa
+from lib.train.train_qa_binary_cls import train_qa, eval_qa
 from my_py_toolkit.torch.utils import load_model, get_adam_optimizer
 from tqdm import tqdm
 

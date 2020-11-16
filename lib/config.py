@@ -23,7 +23,7 @@ class Config(object):
     self.save_feature = True
 
     # encoder
-    self.use_encoder = False
+    self.use_encoder = True
     self.use_position_embedding = True
     self.encoder_hidden_layer_number = 11
     self.encoder_intermediate_dim = 3072
@@ -82,11 +82,11 @@ class Config(object):
     self.mode = "train" # train, debug, valid, test
     self.record_interval_steps = 500
     self.model_save_dir = "../model"
-    self.is_continue_train = True
+    self.is_continue_train = False
     self.continue_checkpoint = 4000
-    self.continue_epoch = 2
-    self.start_epoch = 3
-    self.epochs = 4
+    self.continue_epoch = 0
+    self.start_epoch = 0
+    self.epochs = 2
     self.log_path = "../log/log.txt"
     self.logger = get_logger(self.log_path)
 
