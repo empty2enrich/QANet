@@ -393,9 +393,9 @@ def scope_truncate_context(all_doc_tokens, doc_stride, max_tokens_for_doc):
     start_offset += min(length, doc_stride)
   return doc_spans
 
-def gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_index, is_training,
-                max_seq_length, query_tokens,
-                tok_end_position, tok_start_position, tok_to_orig_index, tokenizer, unique_id):
+def gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_index,
+                is_training, max_seq_length, query_tokens, tok_end_position,
+                tok_start_position, tok_to_orig_index, tokenizer, unique_id):
   tokens = []
   token_to_orig_map = {}
   token_is_max_context = {}

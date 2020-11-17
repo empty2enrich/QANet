@@ -45,9 +45,10 @@ def json2features(input_file, output_files, tokenizer, is_training=False,
     doc_spans = scope_truncate_context(all_doc_tokens, doc_stride, max_seq_length - len(query_tokens) - 3)
 
     for (doc_span_index, doc_span) in enumerate(doc_spans):
-      feature = gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_index, is_training,
-                  max_seq_length, query_tokens,
-                  tok_end_position, tok_start_position, tok_to_orig_index, tokenizer, unique_id)
+      feature = gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans,
+                            example_index, is_training, max_seq_length, query_tokens,
+                            tok_end_position, tok_start_position, tok_to_orig_index,
+                            tokenizer, unique_id)
       features.append(feature)
       unique_id += 1
 
