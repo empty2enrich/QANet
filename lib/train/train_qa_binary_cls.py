@@ -125,7 +125,7 @@ def convert_pre_res_binary_cls(input_ids, pre_ids, ori_start, ori_end, tokenizer
     context = "".join(tokens[tokens.index("[SEP]"):])
     label_answer = "".join(
       tokens[o_start:o_end + 1])
-    predict_answer = "".join([tokens[i] for i in cur_pre_ids ])
+    predict_answer = "".join([tokens[i] for i in cur_pre_ids ]) if cur_pre_ids.tolist() else ""
     cur_res = {
       "context": context,
       "question": question,
@@ -245,8 +245,8 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
       losses.append(loss.item())
       loss.backward()
 
-      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, start_embeddings, start_positions,
-                                                                      end_embeddings, end_positions, epoch,
+      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, output, start_positions,
+                                                                      end_positions, epoch,
                                                                       exact_match_total, f1_total, input_ids, loss, model,
                                                                       optimizer, softmax,
                                                                       step, tokenizer, mode="train")
@@ -331,7 +331,8 @@ def find_answer(model_output, softmax):
 
   """
   model_output = softmax(model_output)
-  return model_output.max(-1)
+  model_output = torch.nonzero(model_output.max(-1).indices)
+  return model_output if model_output.tolist() else torch.Tensor([0]).to(model_output.device)
 
 
 def record_train_info_calculate_f1_em_bi_cls(config, model_output, answer,
@@ -388,7 +389,7 @@ def calculate_loss_binary_cls(model_output, answer, log_sofmax):
   # return loss
   model_output = log_sofmax(model_output)
   model_output = reshape_tensor(model_output, (-1, 2))
-  answer = reshape_tensor(answer, (-1, 1))
+  answer = reshape_tensor(answer, (-1, ))
 
-  loss = F.nll_loss(model_output, answer, reduction="mean")
+  loss = F.nll_loss(model_output, answer, reduction="sum")
   return loss
