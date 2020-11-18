@@ -332,7 +332,19 @@ def find_answer(model_output, softmax):
   """
   model_output = softmax(model_output)
   model_output = torch.nonzero(model_output.max(-1).indices)
-  return model_output if model_output.tolist() else torch.Tensor([0]).to(model_output.device)
+  if model_output.tolist():
+    res = []
+    for i in range(model_output.shape[0]):
+      cur = torch.nonzero(torch.eq(model_output[:, 0], 1))
+      if cur.tolist():
+        res.append(model_output[cur[0], :])
+      else:
+        res.append([])
+    model_output = torch.Tensor(res)
+  else:
+    model_output = torch.Tensor([0]).to(
+      model_output.device)
+  return model_output
 
 
 def record_train_info_calculate_f1_em_bi_cls(config, model_output, answer,

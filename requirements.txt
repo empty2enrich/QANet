@@ -1,2 +1,5 @@
-pytorch_transformers == requirements
+pytorch-transformers == 1.2.0
 tensorboardX == 2.1
+torch == 1.5.1+cu101
+torchvision == 0.4.1+cpu
+pytorch-pretrained-bert == 0.6.2
