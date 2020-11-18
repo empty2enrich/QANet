@@ -125,7 +125,7 @@ def convert_pre_res_binary_cls(input_ids, pre_ids, ori_start, ori_end, tokenizer
     context = "".join(tokens[tokens.index("[SEP]"):])
     label_answer = "".join(
       tokens[o_start:o_end + 1])
-    predict_answer = "".join([tokens[i] for i in cur_pre_ids ]) if cur_pre_ids.tolist() else ""
+    predict_answer = "".join([tokens[i] for i in cur_pre_ids ]) if cur_pre_ids else ""
     cur_res = {
       "context": context,
       "question": question,
@@ -330,21 +330,21 @@ def find_answer(model_output, softmax):
   Returns:
 
   """
+  batch_size = model_output.shape[0]
   model_output = softmax(model_output)
+  res = []
   model_output = torch.nonzero(model_output.max(-1).indices)
+  # print(model_output)
   if model_output.tolist():
-    res = []
-    for i in range(model_output.shape[0]):
-      cur = torch.nonzero(torch.eq(model_output[:, 0], 1))
+    for i in range(batch_size):
+      cur = torch.nonzero(torch.eq(model_output[:, 0], i))
       if cur.tolist():
-        res.append(model_output[cur[0], :])
+        res.append(model_output[cur.squeeze(1)][:, 1].tolist())
       else:
         res.append([])
-    model_output = torch.Tensor(res)
   else:
-    model_output = torch.Tensor([0]).to(
-      model_output.device)
-  return model_output
+    res = [[] for _ in range(batch_size)]
+  return res
 
 
 def record_train_info_calculate_f1_em_bi_cls(config, model_output, answer,
