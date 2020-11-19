@@ -10,9 +10,9 @@ import torch
 from lib.utils import BertConfig, load_bert, mask
 from lib.config import Config
 from lib.model.model_base import ModelBase
-from lib.model.model_utils import DepthwiseSeparableConv, Attention, Encoder, Embedding
+from lib.model.model_utils import DepthwiseSeparableConv, Attention, Encoder, Embedding, CRF
 
-class ModelBaseLineBiCLS(ModelBase):
+class ModelBaseLineNER(ModelBase):
   """
   The model of baseline. binary classify
   """
@@ -23,7 +23,7 @@ class ModelBaseLineBiCLS(ModelBase):
     Args:
       config(Config):
     """
-    super(ModelBaseLineBiCLS, self).__init__(config)
+    super(ModelBaseLineNER, self).__init__(config)
     # self.config = config
     # embedding
     self.bert = load_bert(config.bert_config)
@@ -50,10 +50,12 @@ class ModelBaseLineBiCLS(ModelBase):
     self.rnn_noraml = torch.nn.LayerNorm((self.config.bert_config.max_position_embeddings,
                                           self.config.bert_config.hidden_size))
 
+    self.crf = CRF(self.config.crf_target_size, self.config.crf_average_batch)
+
 
 
     # pointer
-    self.pointer_linear = torch.nn.Linear(config.bert_config.hidden_size, 2)
+    self.pointer_linear = torch.nn.Linear(config.bert_config.hidden_size, self.config.crf_target_size + 2)
     # self.pointer_softmax = torch.nn.Softmax(dim=-2)
 
   def init_h0_c0(self):
@@ -93,3 +95,10 @@ class ModelBaseLineBiCLS(ModelBase):
       embedding = self.encoder(embedding, input_mask)
     embedding = self.pointer(embedding, input_mask)
     return embedding
+
+  def loss(self, feats, mask, tags):
+    """"""
+    loss_value = self.crf.neg_log_likelihood_loss(feats, mask, tags)
+    batch_size = feats.size(0)
+    loss_value /= float(batch_size)
+    return loss_value

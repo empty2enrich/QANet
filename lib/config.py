@@ -56,6 +56,10 @@ class Config(object):
     self.lstm_layer_num = 11
     self.lstm_batch_first = False
 
+    # CRF
+    self.crf_target_size = 2
+    self.crf_average_batch = True
+
     # attention match pyramid
     self.pyramid_chan = 64
     self.pyramid_kernel = 3
