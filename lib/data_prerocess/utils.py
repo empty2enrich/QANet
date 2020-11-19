@@ -457,8 +457,9 @@ def gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_ind
         end_position = tok_end_position - doc_start + doc_offset
 
   answer = [0] * max_seq_length
-  for i in range(start_position, end_position + 1):
-    answer[i] = 1
+  if not start_position ==0 and end_position==0:
+    for i in range(start_position, end_position + 1):
+      answer[i] = 1
   assert -1 < start_position < 512
   assert -1 < end_position < 512
   return {'unique_id': unique_id,

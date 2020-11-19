@@ -50,7 +50,7 @@ class Config(object):
     self.stride = 2
 
     # LSTM
-    self.use_lstm = True
+    self.use_lstm = False
     self.lstm_hidden_size = 768
     self.lstm_bi_direction = True
     self.lstm_layer_num = 11
