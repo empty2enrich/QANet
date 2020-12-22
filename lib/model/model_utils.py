@@ -462,7 +462,7 @@ class CRF(torch.nn.Module):
   """
   CRF model.
   """
-  def __init__(self, target_size, average_batch=True):
+  def __init__(self, target_size, use_cuda=False, average_batch=True):
     """
     Args:
       target_size(int): Target size.
@@ -473,6 +473,7 @@ class CRF(torch.nn.Module):
     # for k in kwargs:
     #     self.__setattr__(k, kwargs[k])
     self.target_size = target_size
+    self.use_cuda = use_cuda
     self.average_batch = average_batch
     self.START_TAG_IDX, self.END_TAG_IDX = -2, -1
     init_transitions = torch.zeros(self.target_size+2, self.target_size+2)
@@ -530,7 +531,7 @@ class CRF(torch.nn.Module):
     final_partition = cur_partition[:, self.END_TAG_IDX]
     return final_partition.sum(), scores
 
-  def _viterbi_decode(self, feats, mask=None):
+  def viterbi_decode(self, feats, mask=None):
     """
     Viterbi decode.
     Args:
@@ -621,7 +622,7 @@ class CRF(torch.nn.Module):
       decode_idx: Result of viterbi decode, eg:(batch_size, seq_len).
       path_score(float): Score of every sentence.
     """
-    path_score, best_path = self._viterbi_decode(feats, mask)
+    path_score, best_path = self.viterbi_decode(feats, mask)
     return path_score, best_path
 
   def _score_sentence(self, scores, mask, tags):

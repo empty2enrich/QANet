@@ -241,11 +241,12 @@ def train_qa(model, optimizer, config, epoch, scheduler=None):
       input_ids, input_mask, segment_ids, start_positions, end_positions, answer = batch
       input_mask = input_mask.float()
       output = model(input_ids, input_mask, segment_ids)
+      _, batch_ids = model.crf(output, input_mask)
       loss = model.loss(output, input_mask, answer)
       losses.append(loss.item())
       loss.backward()
 
-      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, output, start_positions,
+      exact_match_total, f1_total = record_train_info_calculate_f1_em(config, batch_ids, start_positions,
                                                                       end_positions, epoch,
                                                                       exact_match_total, f1_total, input_ids, loss, model,
                                                                       optimizer, softmax,
@@ -355,15 +356,15 @@ def record_train_info_calculate_f1_em_bi_cls(config, model_output, answer,
   """"""
 
 
-def record_train_info_calculate_f1_em(config, model_output, start_positions,
+def record_train_info_calculate_f1_em(config, crf_output, start_positions,
                                       end_positions, epoch,
                                       exact_match_total, f1_total, input_ids, loss, model,
                                       optimizer, softmax,
                                       step, tokenizer, mode="train"):
   # pre_start, pre_end, probabilities = find_max_proper_batch(
   #   softmax(start_embeddings), softmax(end_embeddings))
-  model_output = find_answer(model_output, model)
-  cur_res = convert_pre_res_binary_cls(input_ids, model_output, start_positions,
+  # model_output = find_answer(model_output, model)
+  cur_res = convert_pre_res_binary_cls(input_ids, crf_output, start_positions,
                             end_positions, tokenizer)
   exact_match_total, f1_total, exact_match, f1 = evaluate_valid_result(
     cur_res, exact_match_total, f1_total, (step + 1) * config.batch_size)

@@ -46,11 +46,11 @@ class ModelBaseLineNER(ModelBase):
                              batch_first=config.lstm_batch_first,
                              bidirectional=config.lstm_bi_direction)
     self.rnn_linear = torch.nn.Linear(self.config.lstm_hidden_size * (2 if self.config.lstm_bi_direction else 1),
-                                      self.config.bert_config.hidden_size)
+                                      self.config.crf_target_size + 2)
     self.rnn_noraml = torch.nn.LayerNorm((self.config.bert_config.max_position_embeddings,
-                                          self.config.bert_config.hidden_size))
+                                          self.config.crf_target_size + 2))
 
-    self.crf = CRF(self.config.crf_target_size, self.config.crf_average_batch)
+    self.crf = CRF(self.config.crf_target_size, self.config.device=="cuda", self.config.crf_average_batch)
 
 
 
@@ -93,7 +93,7 @@ class ModelBaseLineNER(ModelBase):
       embedding = self.rnn_noraml(embedding)
     if self.config.use_encoder:
       embedding = self.encoder(embedding, input_mask)
-    embedding = self.pointer(embedding, input_mask)
+      embedding = self.pointer(embedding, input_mask)
     return embedding
 
   def loss(self, feats, mask, tags):
