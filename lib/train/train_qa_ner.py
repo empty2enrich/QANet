@@ -125,7 +125,7 @@ def convert_pre_res_binary_cls(input_ids, pre_ids, ori_start, ori_end, tokenizer
     context = "".join(tokens[tokens.index("[SEP]"):])
     label_answer = "".join(
       tokens[o_start:o_end + 1]) if not o_start==0 and o_end==0 else ""
-    predict_answer = "".join([tokens[i] for i in cur_pre_ids ]) if cur_pre_ids else ""
+    predict_answer = "".join([tokens[i] for i in cur_pre_ids ]) if cur_pre_ids.tolist() else ""
     cur_res = {
       "context": context,
       "question": question,
@@ -298,7 +298,8 @@ def eval_qa(model, optimizer, config, epoch, mode="test"):
       input_ids, input_mask, segment_ids, start_positions, end_positions, answer = batch
       input_mask = input_mask.float()
       model_output = model(input_ids, input_mask, segment_ids)
-      loss = calculate_loss_binary_cls(model_output, answer, log_sofmax)
+      loss = model.loss(model_output, input_mask, answer)
+      # loss = calculate_loss_binary_cls(model_output, answer, log_sofmax)
       losses.append(loss.item())
       #
       exact_match_total, f1_total = record_train_info_calculate_f1_em(config, model_output, start_positions,
