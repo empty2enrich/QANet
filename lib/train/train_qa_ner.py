@@ -124,8 +124,8 @@ def convert_pre_res_binary_cls(input_ids, pre_ids, ori_start, ori_end, tokenizer
     question = "".join(tokens[:tokens.index("[SEP]")])
     context = "".join(tokens[tokens.index("[SEP]"):])
     label_answer = "".join(
-      tokens[o_start:o_end + 1]) if not o_start==0 and o_end==0 else ""
-    predict_answer = "".join([tokens[i] for i in cur_pre_ids ]) if cur_pre_ids.tolist() else ""
+      tokens[o_start:o_end + 1]) if not (o_start==0 and o_end==0) else ""
+    predict_answer = "".join([tokens[i] for i in cur_pre_ids if i==1]) if cur_pre_ids.tolist() else ""
     cur_res = {
       "context": context,
       "question": question,
