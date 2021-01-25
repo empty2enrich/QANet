@@ -402,6 +402,7 @@ def gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_ind
   segment_ids = []
   tokens.append("[CLS]")
   segment_ids.append(0)
+  origin_answer = all_doc_tokens[tok_start_position: tok_end_position + 1]
 
   for token in query_tokens:
     tokens.append(token)
@@ -452,9 +453,11 @@ def gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_ind
         start_position = 0
         end_position = 0
       else:
-        doc_offset = 1
-        start_position = tok_start_position - doc_start + doc_offset
-        end_position = tok_end_position - doc_start + doc_offset
+        doc_offset = 2
+        start_position = tok_start_position - doc_start + doc_offset + len(query_tokens)
+        end_position = tok_end_position - doc_start + doc_offset + len(query_tokens)
+        if origin_answer != tokens[start_position:end_position + 1]:
+          print(f"Answer is wrong! origin: {origin_answer}, final answer : {tokens[start_position:end_position + 1]}")
 
   answer = [0] * max_seq_length
   if not start_position ==0 and end_position==0:

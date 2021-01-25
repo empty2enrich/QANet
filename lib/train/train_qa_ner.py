@@ -14,7 +14,7 @@ import traceback
 
 from collections import Counter
 from lib.config import Config
-from lib.data_prerocess.binary_clssify_base import load_data
+from lib.data_prerocess.ner_base import load_data
 from lib.utils import reshape_tensor
 from my_py_toolkit.torch.utils import save_model
 from my_py_toolkit.data_visulization.tensorboard import visual_data
@@ -125,7 +125,7 @@ def convert_pre_res_binary_cls(input_ids, pre_ids, ori_start, ori_end, tokenizer
     context = "".join(tokens[tokens.index("[SEP]"):])
     label_answer = "".join(
       tokens[o_start:o_end + 1]) if not (o_start==0 and o_end==0) else ""
-    predict_answer = "".join([tokens[i] for i in cur_pre_ids if i==1]) if cur_pre_ids.tolist() else ""
+    predict_answer = "".join([tokens[idx] for idx, i in enumerate(cur_pre_ids) if i==1]) if cur_pre_ids.tolist() else ""
     cur_res = {
       "context": context,
       "question": question,
