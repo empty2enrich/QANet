@@ -57,7 +57,7 @@ class Config(object):
     self.lstm_batch_first = False
 
     # CRF
-    self.crf_target_size = 2
+    self.crf_target_size = 5
     self.crf_average_batch = True
 
     # attention match pyramid

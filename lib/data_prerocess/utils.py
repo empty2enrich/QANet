@@ -400,6 +400,7 @@ def gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_ind
   token_to_orig_map = {}
   token_is_max_context = {}
   segment_ids = []
+  answer = []
   tokens.append("[CLS]")
   segment_ids.append(0)
   origin_answer = all_doc_tokens[tok_start_position: tok_end_position + 1]
@@ -460,9 +461,10 @@ def gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_ind
           print(f"Answer is wrong! origin: {origin_answer}, final answer : {tokens[start_position:end_position + 1]}")
 
   answer = [0] * max_seq_length
-  if not start_position ==0 and end_position==0:
+  if not start_position == 0 and end_position == 0:
     for i in range(start_position, end_position + 1):
       answer[i] = 1
+
   assert -1 < start_position < 512
   assert -1 < end_position < 512
   return {'unique_id': unique_id,
@@ -478,6 +480,108 @@ def gen_feature(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_ind
           'start_position': start_position,
           'end_position': end_position,
           'answer': answer}
+
+
+def gen_feature_ner5tag(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_index,
+                is_training, max_seq_length, query_tokens, tok_end_position,
+                tok_start_position, tok_to_orig_index, tokenizer, unique_id):
+  tokens = []
+  token_to_orig_map = {}
+  token_is_max_context = {}
+  segment_ids = []
+  answer = []
+  tokens.append("[CLS]")
+  segment_ids.append(0)
+  origin_answer = all_doc_tokens[tok_start_position: tok_end_position + 1]
+
+  for token in query_tokens:
+    tokens.append(token)
+    segment_ids.append(0)
+
+  tokens.append("[SEP]")
+  segment_ids.append(0)
+
+  for i in range(doc_span.length):
+    split_token_index = doc_span.start + i
+    token_to_orig_map[len(tokens)] = tok_to_orig_index[split_token_index]
+    is_max_context = check_is_max_context(doc_spans, doc_span_index,
+                                          split_token_index)
+    token_is_max_context[len(tokens)] = is_max_context
+    tokens.append(all_doc_tokens[split_token_index])
+    segment_ids.append(1)
+  tokens.append("[SEP]")
+  segment_ids.append(1)
+  input_ids = tokenizer.convert_tokens_to_ids(tokens)
+  # The mask has 1 for real tokens and 0 for padding tokens. Only real
+  # tokens are attended to.
+  input_mask = [1] * len(input_ids)
+  # Zero-pad up to the sequence length.
+  while len(input_ids) < max_seq_length:
+    input_ids.append(0)
+    input_mask.append(0)
+    segment_ids.append(0)
+  assert len(input_ids) == max_seq_length
+  assert len(input_mask) == max_seq_length
+  assert len(segment_ids) == max_seq_length
+  start_position = None
+  end_position = None
+  if is_training:
+    # For training, if our document chunk does not contain an annotation
+    # we throw it out, since there is nothing to predict.
+    if tok_start_position == -1 and tok_end_position == -1:
+      start_position = 0  # 问题本来没答案，0是[CLS]的位子
+      end_position = 0
+    else:  # 如果原本是有答案的，那么去除没有答案的feature
+      out_of_span = False
+      doc_start = doc_span.start  # 映射回原文的起点和终点
+      doc_end = doc_span.start + doc_span.length - 1
+
+      if not (
+        tok_start_position >= doc_start and tok_end_position <= doc_end):  # 该划窗没答案作为无答案增强
+        out_of_span = True
+      if out_of_span:
+        start_position = 0
+        end_position = 0
+      else:
+        doc_offset = 2
+        start_position = tok_start_position - doc_start + doc_offset + len(query_tokens)
+        end_position = tok_end_position - doc_start + doc_offset + len(query_tokens)
+        if origin_answer != tokens[start_position:end_position + 1]:
+          print(f"Answer is wrong! origin: {origin_answer}, final answer : {tokens[start_position:end_position + 1]}")
+
+  answer = generator_answer_label(answer, doc_span, end_position,
+                                  max_seq_length, query_tokens, start_position)
+  assert -1 < start_position < 512
+  assert -1 < end_position < 512
+  return {'unique_id': unique_id,
+          'example_index': example_index,
+          'doc_span_index': doc_span_index,
+          'tokens': tokens,
+          'question_tokens': query_tokens,
+          'token_to_orig_map': token_to_orig_map,
+          'token_is_max_context': token_is_max_context,
+          'input_ids': input_ids,
+          'input_mask': input_mask,
+          'segment_ids': segment_ids,
+          'start_position': start_position,
+          'end_position': end_position,
+          'answer': answer}
+
+
+def generator_answer_label(answer, doc_span, end_position, max_seq_length,
+                           query_tokens, start_position):
+  answer = [4] * ((len(query_tokens) + doc_span.length + 3))
+  while len(answer) < max_seq_length:
+    answer.append(0)
+  if not start_position == 0 and end_position == 0:
+    for i in range(start_position, end_position + 1):
+      if i == start_position:
+        answer[i] = 1
+      elif i == end_position:
+        answer[i] = 3
+      else:
+        answer[i] = 2
+  return answer
 
 
 def gen_feature_sqc(all_doc_tokens, doc_span, doc_span_index, doc_spans, example_index, is_training,

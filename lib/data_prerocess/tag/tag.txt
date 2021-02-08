@@ -1,0 +1,7 @@
+<pad>
+b-answer
+i-answer
+e-answer
+o
+<start>
+<end>
