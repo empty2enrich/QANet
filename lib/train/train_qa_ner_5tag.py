@@ -141,7 +141,7 @@ def convert_answer_idx2text2(cur_pre_ids, tokens):
   result = []
   for reg in regex_list:
     cur_res = []
-    for search in re.finditer(reg, "".join(cur_pre_ids)):
+    for search in re.finditer(reg, "".join([str(v) for v in cur_pre_ids.tolist()])):
       start, end = search.span()
       cur_res.append("".join(tokens[start:end]))
     result.append(cur_res)

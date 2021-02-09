@@ -14,7 +14,7 @@ from lib.model.model_baseline_ner import ModelBaseLineNER
 # from lib.model.model_macth_pyramid import ModelMatchPyramid
 # from lib.model.model_use_cls import ModelCLS
 # from lib.train.train_qa import train_qa, eval_qa
-from lib.train.train_qa_ner import train_qa, eval_qa
+from lib.train.train_qa_ner_5tag import train_qa, eval_qa
 from my_py_toolkit.torch.utils import load_model, get_adam_optimizer
 from tqdm import tqdm
 

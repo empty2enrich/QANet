@@ -18,7 +18,7 @@ class Config(object):
     # split_qc 是否把 context token 与 question token 分开
     self.split_qc = True
     # re_gen_feature True: 表示重新生成 feature 缓存文件
-    self.re_gen_feature = True
+    self.re_gen_feature = False
     self.max_query_length = 32
     self.save_feature = True
 
